@@ -1,9 +1,9 @@
-import { render, mut, sig, mem, eff_on, each, if_then } from "./solid/monke.js"
+import { mounted, render, mut, sig, mem, eff_on, each, if_then } from "./solid/monke.js"
 import { hdom } from "./solid/hdom/index.js"
+import { Q5 } from "./q5/q5.js"
 // import * as pixijs from 'https://esm.sh/pixi.js'
 // console.log(pixijs)
 import CSS from "./css/css.js"
-
 import * as ArenaType from "./arena.js"
 import * as Tapri from "./solid/monke.js"
 
@@ -76,10 +76,99 @@ const loadfont = (src, name) => {
 const Main = () => hdom([
 	["style", () => css(style)],
 	//Add a loader,
-	[".main", Canvas, Tabs,]
+	[".main", Canvas.html, Tabs,]
 ])
 
-const Canvas = [".canvas"]
+function init_p5(el) {
+	let p = new Q5('instance', el);
+
+	let r1 = 200;
+	let r2 = 440;
+	let text1 = "ALTpractices"
+	let textc = "#9366C5";
+	let e1font, e2font, e3font
+	p.setup = () => {
+		p.createCanvas(window.innerWidth, window.innerWidth, { alpha: true });
+		p.angleMode(p.DEGREES);
+	};
+
+	p.preload = () => {
+		e1font = p.loadFont("./fonts/Anthony.otf");
+		e2font = p.loadFont("./fonts/CirrusCumulus.otf");
+		e3font = p.loadFont("./fonts/DuctusCalligraphic.otf");
+		// farsifont = loadFont("fonts/Alexandria-VariableFont_wght.ttf");
+		// (text1 = "ALTpractices"),
+		//   (text2 = "دیگر"),
+		//   (text3 = "alt"),
+		//   "대안",
+		//   "अन्य",
+		//   "متبادل";
+		// Adjust path as needed
+	}
+	function pickword() { }
+	p.draw = () => {
+		p.clear()
+		//p.background(255);
+		// p.push()
+		// p.translate(p.width / 2, p.height / 2);
+
+		let an = p.frameCount * 1;
+
+		p.stroke(255);
+		p.noFill();
+		for (let i = 0; i < 360; i += 30) {
+			p.textSize(70);
+			p.noStroke();
+			p.textAlign(p.CENTER, p.CENTER);
+			let x = p.cos(i) * r1;
+			let y = p.sin(i) * r2;
+
+			//p.push();
+			p.rectMode(p.CENTER);
+			//rotation for each point
+			let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
+			let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 3;
+
+			if (i > 80) p.textFont(e2font);
+			else p.textFont(e1font)
+
+			p.fill(colors.white + "aa");
+			p.circle(x1, y1, 50)
+
+			p.fill(colors.highlight)
+			p.text(text1[i / 30], x1, y1);
+		}
+		// p.pop()
+		//ellipse changing ratios
+		r1 = 240 + p.cos(90 - an) * 80;
+		r2 = 300 + p.sin(90 - an) * 120;
+	}
+}
+
+const Canvas = (() => {
+	const html = () => {
+		mounted(() => {
+			console.log("mounted", document.querySelector(".canvas"))
+			init_p5(document.querySelector(".canvas"))
+		})
+		return hdom([".canvas"])
+	}
+
+	const css = [".canvas", {
+		position: "fixed",
+		background: colors.base,
+
+		"background-size": [[px(40), px(40)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
+	}, fullscreen]
+
+	return {
+		html, css
+	}
+})()
 
 const schedule = (() => {
 	let top = sig(45)
@@ -100,9 +189,9 @@ const schedule = (() => {
 		}],
 
 		[".section", {
-			margin: rem(.5),
-			padding: rem(.5),
-			border: [[px(1), "dotted", colors.black]],
+			margin: rem(1.25),
+			padding: rem(.25),
+			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
 		},
 			[":hover", { color: colors.white, "background-color": colors.highlight }],
@@ -116,7 +205,6 @@ const schedule = (() => {
 				"border-radius": px(15)
 			}]
 		],
-
 	]
 
 	const html =
@@ -170,34 +258,17 @@ let style = mut([
 	}],
 
 	...Array(5).fill(0).map((e, i) =>
-		["h" + (i + 1),
-		{
-			"font-family": () => type.heading,
-			"font-size": em(4 - (i / 2))
-		}
-		]),
+		["h" + (i + 1), { "font-family": () => type.heading, "font-size": em(4 - (i / 2)) }]),
 
-	[".canvas", {
-		position: "fixed",
-		background: colors.base,
-
-
-		"background-size": [[px(40), px(40)]],
-		"background-image": [
-			"linear-gradient(to right, #2222 1px, transparent 1px)",
-			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
-		]
-	}, fullscreen],
-
+	Canvas.css,
 	[".tabs",
-		// revolving?
 		schedule.css,
 		[".resources",
 			rect(
 				calc(em(3), "+", vw(30)), em(1),
 				calc(vw(100), "-", "(", em(4), "+", vw(30), ")"), vh(40),
 			), {
-				background: colors.highlight,
+				background: colors.highlight + "22",
 			}],
 		[".info"]
 	],

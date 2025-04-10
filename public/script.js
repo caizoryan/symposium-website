@@ -28,7 +28,7 @@ const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 // CSS UTILITIES
 // --------------------------
 
-const { vw, px, vh, css, url, em, rem, percent } = CSS
+const { vw, px, vh, ms, css, url, em, rem, percent } = CSS
 const calc = (...args) => `calc(${args.join(" ")})`
 
 const fullscreen = {
@@ -56,33 +56,142 @@ let colors = mut({
 	black: "#4D4D4D"
 })
 
+let type = mut({
+	heading: "anthony"
+})
+
+const loadfont = (src, name) => {
+	return ['@font-face', {
+		"font-family": name,
+		src: url(src),
+	}]
+}
+
+//setTimeout(() => type.heading = "cirrus", 2500)
+//setTimeout(() => type.heading = "ductus", 5000)
+
+// -----------------------
+// COMPONENT: Main
+// -----------------------
+const Main = () => hdom([
+	["style", () => css(style)],
+	//Add a loader,
+	[".main", Canvas, Tabs,]
+])
+
+const Canvas = [".canvas"]
+
+const schedule = (() => {
+	let top = sig(45)
+	let css = [
+		".schedule",
+		{
+			"font-family": "monospace",
+			background: colors.white,
+			color: () => colors.text,
+			transition: [["all", ms(500)]],
+			cursor: "crosshair"
+		},
+
+		// Children
+		["> *", {
+			margin: rem(.5),
+			padding: rem(.5),
+		}],
+
+		[".section", {
+			margin: rem(.5),
+			padding: rem(.5),
+			border: [[px(1), "dotted", colors.black]],
+			color: colors.highlight,
+		},
+			[":hover", { color: colors.white, "background-color": colors.highlight }],
+			// title and time
+			[".title", { "font-family": "ductus" }],
+			[".time", {
+				display: "block-inline",
+				"background-color": colors.highlight, color: colors.white,
+				padding: [[0, em(.5)]],
+				"width": "min-content",
+				"border-radius": px(15)
+			}]
+		],
+
+	]
+
+	const html =
+		[".schedule",
+			{
+				onmouseenter: (e) => e.target == e.currentTarget ? top(top() + (Math.random() * 5) - 2.5) : null,
+				onmouseleave: (e) => e.target == e.currentTarget ? top(Math.random() * 50) : null,
+				style: () => CSS.css(
+					rect(
+						em(1), vh(top()),
+						vw(30), vh(40),
+					))
+			},
+			["h2", "Schedule"],
+			[".section",
+				[".title", "SHEEP School"],
+				[".time", "2pm"]
+			],
+			[".section",
+				[".title", "Garry Ing"],
+				[".time", "3pm"]
+			],
+			[".section",
+				[".title", "1RG"],
+				[".time", "4pm"]
+			],
+		]
+	return { html, css }
+})()
+
+const Tabs = [
+	".tabs",
+	// revolving?
+	schedule.html,
+	[".resources"],
+	[".info"]
+]
+
+
+
 let style = mut([
+	loadfont("./fonts/Anthony.otf", "anthony"),
+	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
+	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
+	loadfont("./fonts/Rajdhani-Light.ttf", "rajdhani"),
+	loadfont("./fonts/DuctusCalligraphic.otf", "ductus"),
+
 	["*", {
 		padding: 0,
 		margin: 0,
 	}],
 
+	...Array(5).fill(0).map((e, i) =>
+		["h" + (i + 1),
+		{
+			"font-family": () => type.heading,
+			"font-size": em(4 - (i / 2))
+		}
+		]),
+
 	[".canvas", {
 		position: "fixed",
-		background: colors.base
+		background: colors.base,
+
+
+		"background-size": [[px(40), px(40)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
 	}, fullscreen],
 
 	[".tabs",
 		// revolving?
-		[".schedule",
-			["> *", {
-				margin: rem(.5),
-				padding: rem(.5),
-				border: [[px(1), "dotted", colors.black]]
-			}],
-			rect(
-				em(1), em(1),
-				vw(30), vh(40),
-			), {
-				"font-family": "monospace",
-				background: colors.white,
-				color: () => colors.text
-			}],
+		schedule.css,
 		[".resources",
 			rect(
 				calc(em(3), "+", vw(30)), em(1),
@@ -93,39 +202,6 @@ let style = mut([
 		[".info"]
 	],
 ])
-
-// -----------------------
-// COMPONENT: Main
-// -----------------------
-const Main = () => hdom([
-	["style", () => CSS.css(style)],
-	//Add a loader,
-	[".main", Canvas, Tabs,]
-])
-
-const Canvas = [".canvas"]
-
-const Tabs = [
-	".tabs",
-	// revolving?
-	[".schedule",
-		["h2", "Schedule"],
-		[".section",
-			[".title", "SHEEP School"],
-			[".time", "2pm"]
-		],
-		[".section",
-			[".title", "Garry Ing"],
-			[".time", "3pm"]
-		],
-		[".section",
-			[".title", "1RG"],
-			[".time", "4pm"]
-		],
-	],
-	[".resources"],
-	[".info"]
-]
 
 
 // -----------------------

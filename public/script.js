@@ -29,95 +29,103 @@ const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 // --------------------------
 
 const { vw, px, vh, css, url, em, rem, percent } = CSS
+const calc = (...args) => `calc(${args.join(" ")})`
 
 const fullscreen = {
 	width: vw(100),
 	height: vh(100)
 }
 
-const rect = (x, y, w, h, xAxis = "left", yAxis = "top") => ({
-	[xAxis]: x,
-	[yAxis]: y,
+const rect = (x, y, w, h, opts = {
+	xAxis: "left",
+	yAxis: "top",
+	strategy: "fixed"
+}) => ({
+	[opts.xAxis]: x,
+	[opts.yAxis]: y,
 	width: w,
-	height: h
+	height: h,
+	position: opts.strategy
 })
+
+let colors = mut({
+	base: "#E5FD53",
+	highlight: "#9366C3",
+	text: "#268E17",
+	white: "#FFFFFF",
+	black: "#4D4D4D"
+})
+
+let style = mut([
+	["*", {
+		padding: 0,
+		margin: 0,
+	}],
+
+	[".canvas", {
+		position: "fixed",
+		background: colors.base
+	}, fullscreen],
+
+	[".tabs",
+		// revolving?
+		[".schedule",
+			["> *", {
+				margin: rem(.5),
+				padding: rem(.5),
+				border: [[px(1), "dotted", colors.black]]
+			}],
+			rect(
+				em(1), em(1),
+				vw(30), vh(40),
+			), {
+				"font-family": "monospace",
+				background: colors.white,
+				color: () => colors.text
+			}],
+		[".resources",
+			rect(
+				calc(em(3), "+", vw(30)), em(1),
+				calc(vw(100), "-", "(", em(4), "+", vw(30), ")"), vh(40),
+			), {
+				background: colors.highlight,
+			}],
+		[".info"]
+	],
+])
 
 // -----------------------
 // COMPONENT: Main
 // -----------------------
-const Main = () => {
-	let ref = e => {
-		canvas_dom = e
-		e.onscroll = x => scroll(e.scrollTop)
-	}
+const Main = () => hdom([
+	["style", () => CSS.css(style)],
+	//Add a loader,
+	[".main", Canvas, Tabs,]
+])
 
-	let style = [
-		["*", {
-			padding: 0,
-			margin: 0,
-		}],
+const Canvas = [".canvas"]
 
-		[".canvas", {
-			position: "fixed",
-			background: "yellow"
-		}, fullscreen],
-
-		[".tabs",
-			// revolving?
-			[".schedule",
-				rect(
-					em(1), em(1),
-					vw(20), vh(20),
-				),
-				{
-					position: "fixed",
-					background: "red",
-					padding: "1em"
-				}],
-			[".resources"],
-			[".info"]
+const Tabs = [
+	".tabs",
+	// revolving?
+	[".schedule",
+		["h2", "Schedule"],
+		[".section",
+			[".title", "SHEEP School"],
+			[".time", "2pm"]
 		],
-
-	]
-
-
-	let show_prop = sig(false)
-	setTimeout(() => show_prop(true), 1000)
-
-	return hdom([
-		["style", CSS.css(style)],
-
-		//Add a loader,
-		[".main",
-			// ----------------
-			// main stage
-			// a container behind canvas?
-			// behind a canvas
-			// in front tabs container
-			[".canvas"],
-			[".tabs",
-				// revolving?
-				[".schedule",
-					["h2", "Schedule"],
-					[".section",
-						[".title", "SHEEP School"],
-						[".time", "2pm"]
-					],
-					[".section",
-						[".title", "Garry Ing"],
-						[".time", "3pm"]
-					],
-					[".section",
-						[".title", "1RG"],
-						[".time", "4pm"]
-					],
-				],
-				[".resources"],
-				[".info"]
-			],
-		]
-	])
-}
+		[".section",
+			[".title", "Garry Ing"],
+			[".time", "3pm"]
+		],
+		[".section",
+			[".title", "1RG"],
+			[".time", "4pm"]
+		],
+	],
+	[".resources"],
+	[".info"]
+]
 
 
 // -----------------------

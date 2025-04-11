@@ -2,7 +2,6 @@ import { mounted, render, mut, sig, mem, eff_on, each, if_then } from "./solid/m
 import { hdom } from "./solid/hdom/index.js"
 import { Q5 } from "./q5/q5.js"
 // import * as pixijs from 'https://esm.sh/pixi.js'
-// console.log(pixijs)
 import CSS from "./css/css.js"
 import * as ArenaType from "./arena.js"
 import * as Tapri from "./solid/monke.js"
@@ -25,9 +24,55 @@ const rel_mouse_x = mem(() => mouse_x() / window.innerWidth)
 const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 
 // --------------------------
-// CSS UTILITIES
+// Note: This sourcecode takes 
+// the form of a game engine
+//
+// It manages a entities (Rectangles),
+// existing on a plane. 
+//
+// Rectangles have children, 
+// and children are related to
+// their parents in certain ways:
+// top-left, top-right, etc
+//
+// when parents move, children follow
+// when layour changes, parents move
+// when interaction, parents change, children change
+//
+// All the rectangles are choreographed to form
+// various compositions.
+//
+// Compositions reveals something, like the schedule
+// or information about the speaker or symposium
+// or resources like pdfs
+//
+// and certan compositions unlock secret walls
+// of communication.
+//
+//
+// Graphics alter between on approach to another
+// Graphics rotate, spin, change and mingle.
 // --------------------------
 
+// --------------------
+// CSS Variables
+// --------------------
+const colors = mut({
+	base: "#E5FD53",
+	highlight: "#9366C3",
+	text: "#268E17",
+	white: "#FFFFFF",
+	black: "#4D4D4D"
+})
+
+const type = mut({
+	heading: "anthony"
+})
+
+
+// --------------------------
+// CSS UTILITIES
+// --------------------------
 const { vw, px, vh, ms, css, url, em, rem, percent } = CSS
 const calc = (...args) => `calc(${args.join(" ")})`
 
@@ -36,6 +81,24 @@ const fullscreen = {
 	height: vh(100)
 }
 
+const random_pos = (w = 10, h = 10) => ({
+	x: ((100 - w) * Math.random()),
+	y: ((100 - h) * Math.random()),
+})
+
+
+/**
+ * @param {string} x 
+ * @param {string} y 
+ * @param {string} w 
+ * @param {string} h 
+ * @param {{
+ *	xAxis?: ("left" | "right"),
+ *	yAxis?: ("top" | "bottom"),
+ *	strategy?: ("fixed" | "absolute")
+ * }} opts
+ * 
+ * */
 const rect = (x, y, w, h, opts = {
 	xAxis: "left",
 	yAxis: "top",
@@ -48,18 +111,6 @@ const rect = (x, y, w, h, opts = {
 	position: opts.strategy
 })
 
-let colors = mut({
-	base: "#E5FD53",
-	highlight: "#9366C3",
-	text: "#268E17",
-	white: "#FFFFFF",
-	black: "#4D4D4D"
-})
-
-let type = mut({
-	heading: "anthony"
-})
-
 const loadfont = (src, name) => {
 	return ['@font-face', {
 		"font-family": name,
@@ -67,8 +118,89 @@ const loadfont = (src, name) => {
 	}]
 }
 
-//setTimeout(() => type.heading = "cirrus", 2500)
-//setTimeout(() => type.heading = "ductus", 5000)
+// ------------------
+// (Game) Components
+// ------------------
+
+// ------------------
+// Rectangle manages
+//
+// rectangular, position
+// width, height stuff
+//
+// gives us css
+//
+// checks for intersections with:
+// line and rect and or circle
+// ------------------
+
+/**
+ * @typedef {{
+ *	x: Tapri.Signal<number>,
+ *	y: Tapri.Signal<number>,
+ *	w: Tapri.Signal<number>,
+ *	h: Tapri.Signal<number>,
+ *	unit: (axis: ("x" | "y")) => ("px" | "vh" | "vw" | "v" | "em")
+ *	xAxis: ("left" | "right"),
+ *	yAxis: ("top" | "bottom"),
+ *	strategy: ("fixed" | "absolute"),
+ *	css: () => () => string
+ * }} Rectangle
+ * */
+
+/**
+ * @param {number} x 
+ * @param {number} y 
+ * @param {number} w 
+ * @param {number} h 
+ * @param {{
+ *	unit?: ("px" | "vh" | "vw" | "v" | "em") 
+ *	xAxis?: ("left" | "right"),
+ *	yAxis?: ("top" | "bottom"),
+ *	strategy?: ("fixed" | "absolute")
+ * }} opts
+ * @returns {Rectangle}
+ * */
+function Rectangle(x, y, w, h, opts) {
+	const default_opts = { xAxis: "left", yAxis: "top", strategy: "fixed", unit: "px" }
+	const _opts = sig(Object.assign(default_opts, opts))
+	const _x = sig(x)
+	const _y = sig(y)
+	const _w = sig(w)
+	const _h = sig(h)
+	const _unit = (axis) => _opts().unit == "v"
+		? axis == "x" ? "vw" : "vh"
+		: this.opts().unit
+
+	return {
+		x: _x,
+		y: _y,
+		w: _w,
+		h: _h,
+		unit: _unit,
+		xAxis: opts.xAxis,
+		yAxis: opts.yAxis,
+		strategy: opts.strategy,
+		css: () => mem(() =>
+			css(rect(
+				_x() + _unit("x"),
+				_y() + _unit("y"),
+				_w() + _unit("x"),
+				_h() + _unit("y"),
+				_opts()
+			)))
+	}
+}
+
+function Environment() { }
+
+/**
+ * @typedef {{
+ *	html: any,
+ *	css: any,
+ *	rectangle: Rectangle
+ * }} RectangleDOM
+ * */
 
 // -----------------------
 // COMPONENT: Main
@@ -77,10 +209,11 @@ const Main = () => hdom([
 	["style", () => css(style)],
 	//Add a loader,
 	[".main",
-		[".resources",
-			[".ornament"]
-		],
-		Canvas.html, Tabs,]
+		Resources.html,
+		Ornament.html,
+		Canvas.html,
+		Schedule.html,
+	]
 ])
 
 function init_p5(el) {
@@ -88,7 +221,7 @@ function init_p5(el) {
 
 	let r1 = 200;
 	let r2 = 440;
-	let text1 = "ALTpractices"
+	let text1 = "अलगpracticeseeee"
 	let textc = "#9366C5";
 	let e1font, e2font, e3font
 	p.setup = () => {
@@ -97,91 +230,160 @@ function init_p5(el) {
 	};
 
 	p.preload = () => {
-		e1font = p.loadFont("./fonts/Anthony.otf");
-		e2font = p.loadFont("./fonts/CirrusCumulus.otf");
+		e1font = p.loadFont("./fonts/Rajdhani-Light.ttf");
+		e2font = p.loadFont("./fonts/Rajdhani-Light.ttf");
 		e3font = p.loadFont("./fonts/DuctusCalligraphic.otf");
-		// farsifont = loadFont("fonts/Alexandria-VariableFont_wght.ttf");
-		// (text1 = "ALTpractices"),
-		//   (text2 = "دیگر"),
-		//   (text3 = "alt"),
-		//   "대안",
-		//   "अन्य",
-		//   "متبادل";
-		// Adjust path as needed
 	}
-	function pickword() { }
+
+	let an = 0
+	function draw_character(angle, char) {
+		p.textSize(70);
+		p.noStroke();
+		p.textAlign(p.CENTER, p.CENTER);
+
+		let x = p.cos(angle) * r1;
+		let y = p.sin(angle) * r2;
+
+		p.rectMode(p.CENTER);
+		//rotation for each point
+		let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
+		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 4;
+
+		if (angle > 80) p.textFont(e2font);
+		else p.textFont(e1font)
+
+		p.stroke(colors.white);
+		p.noFill()
+		p.circle(x1, y1, 80)
+
+		p.fill(colors.white)
+		p.noStroke()
+		p.text(char, x1, y1);
+	}
+
 	p.draw = () => {
 		p.clear()
-		let an = p.frameCount * 1;
-
+		an = p.lerp(an, (mouse_y() * mouse_x()) / 300, 0.001)
 		p.stroke(255);
 		p.noFill();
-		for (let i = 0; i < 360; i += 30) {
-			p.textSize(70);
-			p.noStroke();
-			p.textAlign(p.CENTER, p.CENTER);
 
-			let x = p.cos(i) * r1;
-			let y = p.sin(i) * r2;
+		text1.split("").forEach((char, i) => {
+			let angle = 360 / text1.length * i
+			draw_character(angle, char)
+		})
 
-			p.rectMode(p.CENTER);
-			//rotation for each point
-			let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
-			let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 4;
-
-			if (i > 80) p.textFont(e2font);
-			else p.textFont(e1font)
-
-			p.stroke(colors.white);
-			p.noFill()
-			p.circle(x1, y1, 80)
-
-			p.fill(colors.white)
-			p.noStroke()
-			p.text(text1[i / 30], x1, y1);
-		}
-		// p.pop()
-		//ellipse changing ratios
 		r1 = 300 + p.cos(90 - an) * 80;
 		r2 = 300 + p.sin(90 - an) * 120;
-		// r1 = 300
-		// r2 = 300
 	}
 }
 
-const Canvas = (() => {
-	const html = () => {
-		mounted(() => {
-			console.log("mounted", document.querySelector(".canvas"))
-			init_p5(document.querySelector(".canvas"))
-		})
-		return hdom([".canvas"])
+/**
+ * @param {Rectangle} rectangle
+ * @param {{x: number, y: number}} pos
+ * @param {number=} inc
+ * @param {number=} t
+ * @param {any=} timeout
+ * */
+const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
+	if (timeout) clearTimeout(timeout)
+	let diff_x = rectangle.x() - pos.x
+	let diff_y = rectangle.y() - pos.y
+
+	let new_x = rectangle.x() + (rectangle.x() < pos.x ? inc : inc * -1)
+	let new_y = rectangle.y() + (rectangle.y() < pos.y ? inc : inc * -1)
+
+	let need_update_x = Math.abs(diff_x) > inc
+	let need_update_y = Math.abs(diff_y) > inc
+
+	let update_fn_x = () => {
+		rectangle.x(new_x)
+		seek_rect(pos, rectangle, inc, t, timeout)
 	}
 
-	const css = [".canvas", { position: "fixed" }, fullscreen]
-
-	return {
-		html, css
+	let update_fn_y = () => {
+		rectangle.y(new_y)
+		seek_rect(pos, rectangle, inc, t, timeout)
 	}
+
+	let fns = []
+	if (need_update_x) fns.push(update_fn_x)
+	if (need_update_y) fns.push(update_fn_y)
+
+	timeout = setTimeout(() => {
+		const is = fns[Math.floor(Math.random() * fns.length)]
+		if (is) is()
+	}, t)
+}
+
+
+/**@type RectangleDOM*/
+const Ornament = (() => {
+	let rectangle = Rectangle(20, 30, 25, 40, { unit: "v" })
+
+	let inlinecss = rectangle.css()
+
+	let css = [".ornament", {
+		background: colors.highlight,
+		"background-size": [[px(40), px(40)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
+	}]
+
+	let html = [".ornament", { style: inlinecss }]
+
+	return { html, css, rectangle }
 })()
 
-const schedule = (() => {
-	let top = sig(45)
+/**@type RectangleDOM*/
+const Resources = (() => {
+	let rectangle = Rectangle(
+		40, 1,
+		100 - 40 - 1, 60,
+		{ unit: "v" }
+	)
+
+
+	let style = rectangle.css()
+
+	const html = [".resources", { style: style }]
+	const css = [".resources", {
+		position: "fixed",
+		background: colors.highlight,
+		"background-size": [[px(40), px(40)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
+	}]
+
+	return { css, html, rectangle }
+})()
+
+
+/**@type RectangleDOM*/
+let Schedule = (function() {
 	let css = [
 		".schedule",
 		{
 			"font-family": "monospace",
 			background: colors.white,
 			color: () => colors.text,
-			transition: [["all", ms(500)]],
-			cursor: "crosshair"
+			transition: [["all", ms(200)]],
+			cursor: "crosshair",
+			display: "grid",
+			"grid-template-rows": [[percent(20), percent(80)]]
 		},
 
-		// Children
-		["> *", {
-			margin: rem(.5),
-			padding: rem(.5),
-		}],
+		["h2", { "padding": rem(1) }],
+
+		[".schedule-container",
+			{
+				"height": percent(100),
+				"overflow-y": "scroll"
+			},
+		],
 
 		[".section", {
 			padding: rem(.25),
@@ -191,7 +393,6 @@ const schedule = (() => {
 			color: colors.highlight,
 		},
 			[":hover", { color: colors.white, "background-color": colors.highlight }],
-			// title and time
 			[".title", { "font-family": "ductus" }],
 			[".time", {
 				display: "block-inline",
@@ -202,44 +403,78 @@ const schedule = (() => {
 			}]
 		],
 	]
+	let rectangle = Rectangle(1, 45, 30, 60, { unit: "v" })
+	let inlincecss = rectangle.css()
 
 	const html =
 		[".schedule",
 			{
-				onmouseenter: (e) => e.target == e.currentTarget ? top(top() + (Math.random() * 5) - 2.5) : null,
-				onmouseleave: (e) => e.target == e.currentTarget ? top(Math.random() * 50) : null,
-				style: () => CSS.css(
-					rect(
-						em(1), vh(top()),
-						vw(30), vh(40),
-					))
+				onmouseenter: (e) => e.target == e.currentTarget ? rectangle.y(rectangle.y() + (Math.random() * 5) - 2.5) : null,
+				onmouseleave: (e) => e.target == e.currentTarget ? rectangle.y(Math.random() * 50) : null,
+				style: inlincecss
 			},
 			["h2", "Schedule"],
-			[".section",
-				[".title", "SHEEP School"],
-				[".time", "2pm"]
-			],
-			[".section",
-				[".title", "Garry Ing"],
-				[".time", "3pm"]
-			],
-			[".section",
-				[".title", "1RG"],
-				[".time", "4pm"]
-			],
+			[".schedule-container",
+				[".section",
+					[".title", "Eric Francisco"],
+					[".time", "2pm"]
+				],
+				[".section",
+					[".title", "Scott Deeming"],
+					[".time", "3pm"]
+				],
+				[".section",
+					[".title", "Garry Ing"],
+					[".time", "3pm"]
+				],
+				[".section",
+					[".title", "1RG"],
+					[".time", "4pm"]
+				],
+				[".section",
+					[".title", "E.L Guerero"],
+					[".time", "4pm"]
+				],
+				[".section",
+					[".title", "Symon Oliver"],
+					[".time", "4pm"]
+				],
+				[".section",
+					[".title", "SHEEP School"],
+					[".time", "2pm"]
+				],
+
+			]
 		]
+	return { html, css, rectangle }
+})()
+
+
+//----------------------------
+// TEMP
+//----------------------------
+/**@type {RectangleDOM[]}*/
+let comps = [Schedule, Resources, Ornament]
+setInterval(() => {
+	comps.forEach((el) => {
+		seek_rect(random_pos(
+			el.rectangle.w(),
+			el.rectangle.h()),
+			el.rectangle,
+			5.5, 300)
+	})
+}, 5000)
+
+
+const Canvas = (() => {
+	const html = () => hdom([".canvas", { ref: init_p5 }])
+	const css = [".canvas", { position: "fixed" }, fullscreen]
 	return { html, css }
 })()
 
-const Tabs = [
-	".tabs",
-	// revolving?
-	schedule.html,
-	[".info"]
-]
-
-
-
+// ------------------------------
+// CSS Styling
+//----------------------------
 let style = mut([
 	loadfont("./fonts/Anthony.otf", "anthony"),
 	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
@@ -250,49 +485,30 @@ let style = mut([
 	["*", {
 		padding: 0,
 		margin: 0,
+		transition: [["all", ms(200)]],
 	}],
 
+	// -----------------
+	// Heading
+	// -----------------
 	...Array(5).fill(0).map((e, i) =>
 		["h" + (i + 1), { "font-family": () => type.heading, "font-size": em(4 - (i / 2)) }]),
+
 
 	[".main", {
 		position: "fixed",
 		background: colors.base,
-
-		"background-size": [[px(40), px(40)]],
+		"background-size": [[px(100), px(100)]],
 		"background-image": [
 			"linear-gradient(to right, #2222 1px, transparent 1px)",
 			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
 		]
 	}, fullscreen],
 
+	Ornament.css,
 	Canvas.css,
-
-	[".resources",
-		rect(
-			calc(em(3), "+", vw(30)), em(1),
-			calc(vw(100), "-", "(", em(4), "+", vw(30), ")"), vh(40),
-		), {
-			position: "fixed",
-			background: colors.highlight,
-		},
-		[".ornament",
-			rect(
-				em(-5), vh(10),
-				percent(75), vh(80), {
-				xAxis: "left",
-				yAxis: "top",
-				strategy: "absolute"
-			})
-			, {
-				background: colors.highlight
-			}
-		]
-	],
-	[".tabs",
-		schedule.css,
-		[".info"]
-	],
+	Resources.css,
+	Schedule.css,
 ])
 
 

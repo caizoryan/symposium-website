@@ -1,10 +1,10 @@
-import { mounted, render, mut, sig, mem, eff_on, each, if_then } from "./solid/monke.js"
-import { hdom } from "./solid/hdom/index.js"
+import { mounted, render, mut, sig, mem, eff_on, each, if_then } from "./chowk/monke.js"
+import { hdom } from "./chowk/hdom/index.js"
 import { Q5 } from "./q5/q5.js"
 // import * as pixijs from 'https://esm.sh/pixi.js'
 import CSS from "./css/css.js"
 import * as ArenaType from "./arena.js"
-import * as Chowk from "./solid/monke.js"
+import * as Chowk from "./chowk/monke.js"
 
 let canvas_dom
 let timeout = undefined
@@ -23,6 +23,8 @@ const mouse_y = sig(0)
 const rel_mouse_x = mem(() => mouse_x() / window.innerWidth)
 const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 
+// --------------------------
+// *Header: Introduction
 // --------------------------
 // Note: This sourcecode takes 
 // the form of a game engine
@@ -49,10 +51,13 @@ const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 // and certan compositions unlock secret walls
 // of communication.
 //
-//
 // Graphics alter between on approach to another
 // Graphics rotate, spin, change and mingle.
 // --------------------------
+
+// ------------------------------
+// *Header: CSS
+//----------------------------
 
 // --------------------
 // CSS Variables
@@ -119,7 +124,46 @@ const loadfont = (src, name) => {
 }
 
 // ------------------
-// (Game) Components
+// *Header: CSS Definition
+// ------------------
+let style = mut([
+	loadfont("./fonts/Anthony.otf", "anthony"),
+	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
+	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
+	loadfont("./fonts/Rajdhani-Light.ttf", "rajdhani"),
+	loadfont("./fonts/DuctusCalligraphic.otf", "ductus"),
+
+	["*", {
+		padding: 0,
+		margin: 0,
+		transition: [["all", ms(200)]],
+	}],
+
+	// -----------------
+	// Heading
+	// -----------------
+	...Array(5).fill(0).map((e, i) =>
+		["h" + (i + 1), {
+			"font-family": () => type.heading,
+			"font-size": em(4 - (i / 2))
+		}
+		]),
+
+
+	[".main", {
+		position: "fixed",
+		background: colors.base,
+		"background-size": [[px(100), px(100)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
+	}, fullscreen],
+
+])
+
+// ------------------
+// *Header: (Game) Components
 //
 // 1. Rectangle
 // 2. Squad
@@ -211,12 +255,42 @@ function Squad(parent, children) { }
 // For any of these entities, to exist
 // they require a container, a conception of something to be in.
 //
-// Space, provides this concept. You can be (added) to a space
-// You can be (removed) from a space.
+// Space, provides this concept. 
+// You can be (added) to a space
+// Once added you can't be removed, even when you're lifetime is over,
+// there will be a trace of you in this space.
+//
+// Space needs to be negotiated, sometimes its members will be required to compromise
+// for the sake of each other. In this case its important that the members can communicate
+// to each other their needs and capacities.
+//
 // If you are in a space, you're bounded by its (time), 
 // and its (constraints)
 // ------------------------
-function Space() { }
+function Space(style_ref) {
+
+	/**@type {Chowk.Signal<RectangleDOM[]>}*/
+	const space_entities = sig([])
+
+	const add_css = (css) => style_ref.push(css)
+	const add = (el) => {
+		if (el.css) add_css(el.css)
+		space_entities([...space_entities(), el])
+	}
+
+	const space_dom = mem(() =>
+		hdom([".main",
+			...space_entities().map(e => e.html)
+		])
+	)
+
+	return {
+		add,
+		html: space_dom,
+	}
+}
+
+let space = Space(style)
 
 /**
  * @typedef {{
@@ -227,19 +301,10 @@ function Space() { }
  * */
 
 // -----------------------
-// COMPONENT: Main
+// *Header: Graphics
+// 1. p5  
+// 2. animation
 // -----------------------
-const Main = () => hdom([
-	["style", () => css(style)],
-	//Add a loader,
-	[".main",
-		Resources.html,
-		Ornament.html,
-		Canvas.html,
-		Schedule.html,
-	]
-])
-
 function init_p5(el) {
 	let p = new Q5('instance', el);
 
@@ -338,6 +403,16 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 		if (is) is()
 	}, t)
 }
+
+// -----------------------
+// *Header: COMPONENTs
+// -----------------------
+const Main = () => hdom([
+	["style", () => css(style)],
+	//Add a loader,
+	space.html
+])
+
 
 /**@type RectangleDOM*/
 const Ornament = (() => {
@@ -494,45 +569,10 @@ const Canvas = (() => {
 	return { html, css }
 })()
 
-// ------------------------------
-// CSS Styling
-//----------------------------
-let style = mut([
-	loadfont("./fonts/Anthony.otf", "anthony"),
-	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
-	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
-	loadfont("./fonts/Rajdhani-Light.ttf", "rajdhani"),
-	loadfont("./fonts/DuctusCalligraphic.otf", "ductus"),
-
-	["*", {
-		padding: 0,
-		margin: 0,
-		transition: [["all", ms(200)]],
-	}],
-
-	// -----------------
-	// Heading
-	// -----------------
-	...Array(5).fill(0).map((e, i) =>
-		["h" + (i + 1), { "font-family": () => type.heading, "font-size": em(4 - (i / 2)) }]),
-
-
-	[".main", {
-		position: "fixed",
-		background: colors.base,
-		"background-size": [[px(100), px(100)]],
-		"background-image": [
-			"linear-gradient(to right, #2222 1px, transparent 1px)",
-			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
-		]
-	}, fullscreen],
-
-	Ornament.css,
-	Canvas.css,
-	Resources.css,
-	Schedule.css,
-])
-
+space.add(Canvas)
+space.add(Ornament)
+space.add(Resources)
+space.add(Schedule)
 
 // -----------------------
 // Event Listeners

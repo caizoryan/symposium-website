@@ -183,6 +183,7 @@ let style = mut([
  *	css: () => () => string
  * }} Rectangle
  *
+ * @typedef {("px" | "vh" | "vw" | "v" | "em")} Unit
  *  ---
  *  # Rectangle
  *  Manages rectangular, position width, height stuff
@@ -198,10 +199,14 @@ let style = mut([
  * @param {number} w 
  * @param {number} h 
  * @param {{
- *	unit?: ("px" | "vh" | "vw" | "v" | "em") 
+ *	unit?: Unit,
  *	xAxis?: ("left" | "right"),
  *	yAxis?: ("top" | "bottom"),
  *	strategy?: ("fixed" | "absolute")
+ *	wUnit?: (Unit | undefined),
+ *	hUnit?: (Unit | undefined),
+ *	xUnit?: (Unit | undefined),
+ *	yUnit?: (Unit | undefined),
  * }} opts
  * @returns {Rectangle}
  * */
@@ -212,9 +217,25 @@ function Rectangle(x, y, w, h, opts) {
 	const _y = sig(y)
 	const _w = sig(w)
 	const _h = sig(h)
-	const _unit = (axis) => _opts().unit == "v"
-		? axis == "x" ? "vw" : "vh"
-		: this.opts().unit
+	/**@param {("x" | "y" | "w" | "h")}  prop*/
+
+	const _unit = (prop) => {
+		let def = (axis) => _opts().unit == "v"
+			? axis == "x" ? "vw" : "vh"
+			: _opts().unit
+
+		if (prop == "x") return _opts().xUnit
+			? _opts().xUnit : def("x")
+
+		if (prop == "y") return _opts().yUnit
+			? _opts().yUnit : def("y")
+
+		if (prop == "w") return _opts().wUnit
+			? _opts().wUnit : def("x")
+
+		if (prop == "h") return _opts().hUnit
+			? _opts().hUnit : def("y")
+	}
 
 	return {
 		x: _x,
@@ -229,8 +250,8 @@ function Rectangle(x, y, w, h, opts) {
 			css(rect(
 				_x() + _unit("x"),
 				_y() + _unit("y"),
-				_w() + _unit("x"),
-				_h() + _unit("y"),
+				_w() + _unit("w"),
+				_h() + _unit("h"),
 				_opts()
 			)))
 	}
@@ -407,15 +428,10 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 // -----------------------
 // *Header: COMPONENTs
 // -----------------------
-const Main = () => hdom([
-	["style", () => css(style)],
-	//Add a loader,
-	space.html
-])
-
+const Main = () => hdom([["style", () => css(style)], space.html])
 
 /**@type RectangleDOM*/
-const Ornament = (() => {
+const Banner = (() => {
 	let rectangle = Rectangle(20, 30, 25, 40, { unit: "v" })
 
 	let inlinecss = rectangle.css()
@@ -435,7 +451,7 @@ const Ornament = (() => {
 })()
 
 /**@type RectangleDOM*/
-const Resources = (() => {
+const Information = (() => {
 	let rectangle = Rectangle(
 		40, 1,
 		100 - 40 - 1, 60,
@@ -462,8 +478,7 @@ const Resources = (() => {
 /**@type RectangleDOM*/
 let Schedule = (function() {
 	let css = [
-		".schedule",
-		{
+		".schedule", {
 			"font-family": "monospace",
 			background: colors.white,
 			color: () => colors.text,
@@ -475,39 +490,48 @@ let Schedule = (function() {
 
 		["h2", { "padding": rem(1) }],
 
-		[".schedule-container",
-			{
-				"height": percent(100),
-				"overflow-y": "scroll"
-			},
-		],
+		[".schedule-container", {
+			"height": percent(100),
+			"overflow-y": "scroll"
+		}],
 
 		[".section", {
+			margin: [[0, rem(1.25)]],
 			padding: rem(.25),
 			"padding-bottom": rem(1.25),
-			margin: [[0, rem(1.25)]],
 			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
 		},
-			[":hover", { color: colors.white, "background-color": colors.highlight }],
+			[":hover", {
+				color: colors.white,
+				"background-color": colors.highlight
+			}],
+
 			[".title", { "font-family": "ductus" }],
 			[".time", {
 				display: "block-inline",
-				"background-color": colors.highlight, color: colors.white,
 				padding: [[0, em(.5)]],
 				"width": "min-content",
+				"background-color": colors.highlight, color: colors.white,
 				"border-radius": px(15)
 			}]
 		],
 	]
+
 	let rectangle = Rectangle(1, 45, 30, 60, { unit: "v" })
 	let inlincecss = rectangle.css()
 
 	const html =
 		[".schedule",
 			{
-				onmouseenter: (e) => e.target == e.currentTarget ? rectangle.y(rectangle.y() + (Math.random() * 5) - 2.5) : null,
-				onmouseleave: (e) => e.target == e.currentTarget ? rectangle.y(Math.random() * 50) : null,
+				onmouseenter: (e) => e.target == e.currentTarget
+					? rectangle.y(rectangle.y() + (Math.random() * 5) - 2.5)
+					: null,
+
+				onmouseleave: (e) => e.target == e.currentTarget
+					? rectangle.y(Math.random() * 50)
+					: null,
+
 				style: inlincecss
 			},
 			["h2", "Schedule"],
@@ -550,28 +574,28 @@ let Schedule = (function() {
 //----------------------------
 // TEMP
 //----------------------------
-/**@type {RectangleDOM[]}*/
-let comps = [Schedule, Resources, Ornament]
-setInterval(() => {
-	comps.forEach((el) => {
-		seek_rect(random_pos(
-			el.rectangle.w(),
-			el.rectangle.h()),
-			el.rectangle,
-			5.5, 300)
-	})
-}, 5000)
+// /**@type {RectangleDOM[]}*/
+// let comps = [Schedule, Information, Banner]
+// setInterval(() => {
+// 	comps.forEach((el) => {
+// 		seek_rect(random_pos(
+// 			el.rectangle.w(),
+// 			el.rectangle.h()),
+// 			el.rectangle,
+// 			5.5, 300)
+// 	})
+// }, 5000)
 
 
-const Canvas = (() => {
+const Stage = (() => {
 	const html = () => hdom([".canvas", { ref: init_p5 }])
 	const css = [".canvas", { position: "fixed" }, fullscreen]
 	return { html, css }
 })()
 
-space.add(Canvas)
-space.add(Ornament)
-space.add(Resources)
+space.add(Banner)
+space.add(Information)
+space.add(Stage)
 space.add(Schedule)
 
 // -----------------------
@@ -582,6 +606,39 @@ document.body.onmousemove = (e) => {
 	mouse_y(e.clientY)
 }
 // -----------------------
+
+/**
+ * @param {RectangleDOM} first 
+ * @param {RectangleDOM} second 
+ * */
+const maskcontainer = (first, second) => {
+	// will get containers items that take 100% w and h 	
+	const first_class = sig("bottom")
+	const second_class = sig("top")
+
+	const reset = () => {
+		[first, second].forEach(el => {
+			el.rectangle.w(100)
+			el.rectangle.h(100)
+		})
+	}
+
+	const onanimationend = () => {
+		reset()
+		swap()
+	}
+
+	// this will swap on animation end
+	const ordered = sig([first.html, second.html])
+	const swap = () => {
+		let f = ordered()[0]
+		let s = ordered()[1]
+		ordered([s, f])
+	}
+
+	const html = () => hdom([])
+
+}
 
 // -----------------------
 // (u) COMPONENT: Button

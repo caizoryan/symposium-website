@@ -165,17 +165,24 @@ let style = mut([
 // ------------------
 // *Header: (Game) Components
 //
-// 1. Rectangle
-// 2. Squad
-// 3. Space
+// 1. #Rectangle;
+// 2. #Squad;
+// 3. #Clock;
+// 4. #Space;
 // ------------------
 
 /**
  * @typedef {{
- *		xAxis: ("left" | "right"),
- *		unit: Unit,
- *		yAxis: ("top" | "bottom"),
- *		strategy: ("fixed" | "absolute"),
+ *	animate?: boolean,
+ *	props?: {prop: string, ms: number}[], 
+ *	ms?: number,
+ * }} AnimationOpts
+ *
+ * @typedef {{
+ *		xAxis?: ("left" | "right"),
+ *		unit?: Unit,
+ *		yAxis?: ("top" | "bottom"),
+ *		strategy?: ("fixed" | "absolute"),
  *		wUnit?: (Unit | undefined),
  *		hUnit?: (Unit | undefined),
  *		xUnit?: (Unit | undefined),
@@ -194,7 +201,7 @@ let style = mut([
  *
  * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%")} Unit
  *  ---
- *  # Rectangle
+ *  #Rectangle;
  *  Manages rectangular, position width, height stuff
  *  gives us css and checks for intersections with: line and rect and or circle
  *
@@ -203,6 +210,11 @@ let style = mut([
  *  ```
  *  ---
  *
+ * TODO: Rectangle should own its animation queue: either in the form of set interval, or a queue that queues timeouts...
+ * TODO: Rectangle should have animation props
+ * TODO: Rectangle should a translate strategy
+ * TODO: Rotation and scale?
+ * 
  * @param {number} x 
  * @param {number} y 
  * @param {number} w 
@@ -256,7 +268,7 @@ function Rectangle(x, y, w, h, opts) {
 }
 
 // -----------------------
-// Squad
+// #Squad;
 // ----
 // A squad is a grouping of a parent element, i.e a Rectangle
 // with it's children. Children can be other Rectangles or 
@@ -269,8 +281,72 @@ function Rectangle(x, y, w, h, opts) {
 
 function Squad(parent, children) { }
 
+// ----------------------
+// #Clock;
+//
+// can't do without time.
+// all game components ask the clock for elapsed time
+// Clock can be asked to schedule events (use this for set timeout....)
+// Clocks values are signals, so they can be subscribed to,
+// for instance animation can be implemented in effect.
+//
+// ```
+// eff_on(elapsedTime, () => 
+//	 keyframe.time <= elapsedTime() 
+//		 ? animate() 
+//		 : null)
+// ```
+//
+// ----------------------
+/**
+ * @typedef {( time:{
+ *	stamp: number,
+ *	start: number,
+ *	delta: number,
+ *	elapsed: number,
+ *	last: number,
+ * }) => void} ClockCallback
+ * */
+
+function Clock() {
+	/**@type {ClockCallback[]}*/
+	const callbacks = []
+
+	const i = {}
+	i.start = undefined
+	i.elapsed = sig(0)
+	i.last = sig(0)
+
+	/**@param {ClockCallback} fn*/
+	i.add = (fn) => callbacks.push(fn)
+
+	/**@type {FrameRequestCallback}*/
+	const run = stamp => {
+		requestAnimationFrame(run)
+
+		i.start ? null : i.start = stamp
+		i.elapsed(stamp - i.start)
+
+		callbacks.forEach(e => e({
+			stamp,
+			start: i.start,
+			delta: stamp - i.last(),
+			elapsed: i.elapsed(),
+			last: i.last()
+		}))
+
+		i.last(stamp)
+	}
+
+	requestAnimationFrame(run)
+	return i
+}
+
+let clock = Clock()
+clock.add((t) => console.log((t.elapsed / 1000).toFixed(2)))
 
 // ------------------------
+// #Space;
 // For any of these entities, to exist
 // they require a container, a conception of something to be in.
 //
@@ -617,13 +693,15 @@ document.body.onmousemove = (e) => {
 
 /**@type {RectangleDOM}*/
 const First = (() => {
-	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
-	let inlinecss = rectangle.css()
-	let html = () => hdom([".test-box", { style: inlinecss }, "Alternative"])
+	let rectangle = Rectangle(0, 0, 10, 10, { unit: "%", strategy: "absolute" })
+	let ref = rectangle.css()
+	let inlinecss = () => ref() + `background: ${colors.white};color: ${colors.highlight};`
+	let word = sig("Alternative")
+	let html = () => hdom([".test-box", { style: inlinecss }, word])
 	let css = [".test-box", {
 		padding: [[rem(.5), rem(1)]],
 		"font-family": "anthony",
-		"background-color": colors.highlight, color: "white", transition: "all 700ms ease-in"
+		"background-color": colors.highlight, color: "white", transition: "all 400ms ease-in"
 	}]
 
 	return { html, css, rectangle }
@@ -631,7 +709,7 @@ const First = (() => {
 
 /**@type {RectangleDOM}*/
 const Second = (() => {
-	let rectangle = Rectangle(0, 0, 100, 100)
+	let rectangle = Rectangle(0, 0, 10, 10, { unit: "%", strategy: "absolute" })
 	let inlinecss = rectangle.css()
 	let html = () => hdom([".test-box", { style: inlinecss }, "Practices"])
 	return { html, css, rectangle }
@@ -643,31 +721,6 @@ const Second = (() => {
  * @returns {RectangleDOM}
  * */
 const maskcontainer = (first, second) => {
-	// will get containers items that take 100% w and h 	
-	const first_class = sig("bottom")
-	const second_class = sig("top")
-
-	const overrides = {
-		wUnit: "%",
-		hUnit: "%",
-		xUnit: "%",
-		yUnit: "%",
-		strategy: "absolute"
-	}
-
-	const runoveride = (el) => {
-		let opts = el.rectangle.opts()
-		let new_opts = Object.assign(opts, overrides)
-		el.rectangle.opts(new_opts)
-	}
-
-	const init = () => {
-		runoveride(first)
-		runoveride(second)
-	}
-
-	init()
-
 	const runreset = (el) => {
 		el.rectangle.x(0)
 		el.rectangle.y(0)
@@ -685,14 +738,22 @@ const maskcontainer = (first, second) => {
 		reset()
 	}
 
+	const toss = () => Math.random() > .5
+
 	const animate = () => {
-		ordered()[1].rectangle.x(100)
-		ordered()[1].rectangle.w(0)
+		let direction = toss() ? -1 : 1
+		if (toss()) {
+			ordered()[1].rectangle.x(100 * direction)
+			ordered()[1].rectangle.w(0)
+		} else {
+			ordered()[1].rectangle.y(100 * direction)
+			ordered()[1].rectangle.h(0)
+		}
 
 		setTimeout(() => {
 			onanimationend()
 			setTimeout(animate, 500)
-		}, 2000)
+		}, 1500)
 	}
 
 	/**@type {Chowk.Signal<RectangleDOM[]>}*/

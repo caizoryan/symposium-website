@@ -14,6 +14,7 @@ const invlerp = (x, y, a) => clamp((a - x) / (y - x));
 const clamp = (a, min = 0, max = 1) => Math.min(max, Math.max(min, a));
 const range = (x1, y1, x2, y2, a) => lerp(x2, y2, invlerp(x1, y1, a));
 const not = (value) => !value
+const toss = () => Math.random() > .5
 
 /**@type {(val: number, min: number, max: number) => boolean}*/
 const between = (val, min, max) => (val > min && val < max)
@@ -136,7 +137,7 @@ let style = mut([
 	["*", {
 		padding: 0,
 		margin: 0,
-		transition: [["all", ms(200)]],
+		transition: [["all", ms(20)]],
 	}],
 
 	// -----------------
@@ -475,7 +476,9 @@ function init_p5(el) {
  *  start: number,
  *  end: number,
  *  duration: number,
- *  easing?: string
+ *  easing?: string,
+ *	onend?: () => void 
+ *	onstart?: () => void 
  * }} Keyframe
  *
  * @typedef {{
@@ -499,6 +502,7 @@ function init_p5(el) {
  * @returns {PropInstance}
  */
 function Prop(clock, keyframes, setter) {
+	/**@type {PropInstance}*/
 	const api = {
 		active: true,
 		looping: false,
@@ -509,20 +513,27 @@ function Prop(clock, keyframes, setter) {
 			start: key.start,
 			end: key.end,
 			duration: key.duration,
-			easing: key.easing ? key.easing : "linear"
+			onend: key.onend,
+			onstart: key.onstart,
+			easing: key.easing ? key.easing : "linear",
 		})),
 
-		// Method to activate animation
-		animate() {
-			api.active = true
-		},
 
 		// Update method called on each frame, with time delta
 		/**@type {ClockCallback}*/
 		update(time) {
+			let fps = 1000 / time.delta
+			console.log(fps)
+
 			if (!_runChecks(time.destroy)) return
+			let motion = api.keyframes[api.activeMotion]
+
+			api.elapsedTime == 0 && motion.onstart
+				? motion.onstart()
+				: null
+
 			api.elapsedTime += time.delta
-			api.currentValue = _calculate(api.keyframes[api.activeMotion])
+			api.currentValue = _calculate(motion)
 			setter(api.currentValue)
 		},
 
@@ -539,23 +550,10 @@ function Prop(clock, keyframes, setter) {
 			return api
 		},
 
-		// Loop the animation
-		loop() {
-			api.looping = true
-		},
-
-		// Get the current value of the property
-		val() {
-			return api.currentValue
-		},
-
-		// Set the easing function for all keyframes
-		setEasing(easing) {
-			api.keyframes = api.keyframes.map(kf => ({
-				...kf,
-				easing
-			}))
-		},
+		animate() { api.active = true },
+		loop() { api.looping = true },
+		val() { return api.currentValue },
+		setEasing(easing) { api.keyframes.forEach((_, i, c) => c[i].easing = easing) },
 	}
 
 	// Check if animation should continue
@@ -565,6 +563,8 @@ function Prop(clock, keyframes, setter) {
 		const motion = api.keyframes[api.activeMotion]
 
 		if (api.elapsedTime >= motion.duration) {
+			motion.onend ? motion.onend() : null
+
 			if (api.activeMotion < api.keyframes.length - 1) {
 				api.activeMotion++
 				api.elapsedTime = 0
@@ -840,7 +840,7 @@ document.body.onmousemove = (e) => {
 
 /**@type {RectangleDOM}*/
 const First = (() => {
-	let rectangle = Rectangle(0, 0, 10, 10, { unit: "%", strategy: "absolute" })
+	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
 	let ref = rectangle.css()
 	let inlinecss = () => ref() + `background: ${colors.white};color: ${colors.highlight};`
 	let word = sig("Alternative")
@@ -848,7 +848,8 @@ const First = (() => {
 	let css = [".test-box", {
 		padding: [[rem(.5), rem(1)]],
 		"font-family": "anthony",
-		"background-color": colors.highlight, color: "white", transition: "all 400ms ease-in"
+		"background-color": colors.highlight, color: "white",
+		//transition: "all 400ms ease-in"
 	}]
 
 	return { html, css, rectangle }
@@ -856,7 +857,7 @@ const First = (() => {
 
 /**@type {RectangleDOM}*/
 const Second = (() => {
-	let rectangle = Rectangle(0, 0, 10, 10, { unit: "%", strategy: "absolute" })
+	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
 	let inlinecss = rectangle.css()
 	let html = () => hdom([".test-box", { style: inlinecss }, "Practices"])
 	return { html, css, rectangle }
@@ -883,24 +884,21 @@ const maskcontainer = (first, second) => {
 	const onanimationend = () => {
 		swap()
 		reset()
+		setTimeout(_animate, 150)
 	}
 
-	const toss = () => Math.random() > .5
-
-	const animate = () => {
+	const _animate = () => {
 		let direction = toss() ? -1 : 1
-		if (toss()) {
-			ordered()[1].rectangle.x(100 * direction)
-			ordered()[1].rectangle.w(0)
-		} else {
-			ordered()[1].rectangle.y(100 * direction)
-			ordered()[1].rectangle.h(0)
-		}
+		let axis = toss() ? "x" : "y"
 
-		setTimeout(() => {
-			onanimationend()
-			setTimeout(animate, 500)
-		}, 1500)
+		let start = ordered()[1].rectangle[axis]()
+		let end = ordered()[1].rectangle[axis](150 * direction)
+		let onend = onanimationend
+
+		animate.prop(
+			[{ start, end, duration: 500, onend }],
+			ordered()[1].rectangle[axis]
+		).setEasing("InCubic")
 	}
 
 	/**@type {Chowk.Signal<RectangleDOM[]>}*/
@@ -915,36 +913,15 @@ const maskcontainer = (first, second) => {
 	const cssref = rectangle.css()
 	const inlinecss = mem(() => cssref() + "overflow: hidden;")
 	const render = e => e.html()
-	const html = () => hdom([".masked",
-		{ style: inlinecss },
-		() => each(ordered, render)
-	])
+	const html = [".masked", { style: inlinecss }, () => each(ordered, render)]
 
-	animate()
+	onanimationend()
 
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
 let masked = maskcontainer(First, Second)
 space.add(masked)
-
-animate.prop([
-	{ start: 0, end: 20, duration: 1000 },
-	{ start: 50, end: 70, duration: 500 },
-	{ start: 0, end: 20, duration: 1000 },
-	{ start: 50, end: 70, duration: 500 },
-	{ start: 20, end: 90, duration: 1000 }
-], masked.rectangle.y)
-	.setEasing("OutCubic")
-
-animate.prop([
-	{ start: 5, end: 20, duration: 1000 },
-	{ start: 50, end: 70, duration: 1500 },
-	{ start: 5, end: 20, duration: 1000 },
-	{ start: 70, end: 90, duration: 1500 },
-	{ start: 20, end: 30, duration: 1000 }
-], masked.rectangle.x)
-	.loop()
 
 // -----------------------
 // (u) COMPONENT: Button
@@ -979,34 +956,19 @@ function label_number_input(label, getter, setter) {
 }
 
 const Easings = {
-	// no easing, no acceleration
 	linear: (t) => t,
-	// accelerating from zero velocity
 	InQuad: (t) => t * t,
-	// decelerating to zero velocity
 	OutQuad: (t) => t * (2 - t),
-	// acceleration until halfway, then deceleration
 	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
-	// accelerating from zero velocity
 	InCubic: (t) => t * t * t,
-	// decelerating to zero velocity
 	OutCubic: (t) => --t * t * t + 1,
-	// acceleration until halfway, then deceleration
-	InOutCubic: (t) =>
-		t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
-	// accelerating from zero velocity
+	InOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
 	InQuart: (t) => t * t * t * t,
-	// decelerating to zero velocity
 	OutQuart: (t) => 1 - --t * t * t * t,
-	// acceleration until halfway, then deceleration
 	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
-	// accelerating from zero velocity
 	InQuint: (t) => t * t * t * t * t,
-	// decelerating to zero velocity
 	OutQuint: (t) => 1 + --t * t * t * t * t,
-	// acceleration until halfway, then deceleration
-	InOutQuint: (t) =>
-		t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
+	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
 };
 
 render(Main, document.body)

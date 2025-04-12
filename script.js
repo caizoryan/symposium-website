@@ -4,7 +4,7 @@ import { Q5 } from "./q5/q5.js"
 // import * as pixijs from 'https://esm.sh/pixi.js'
 import CSS from "./css/css.js"
 import * as ArenaType from "./arena.js"
-import * as Tapri from "./solid/monke.js"
+import * as Chowk from "./solid/monke.js"
 
 let canvas_dom
 let timeout = undefined
@@ -120,35 +120,35 @@ const loadfont = (src, name) => {
 
 // ------------------
 // (Game) Components
-// ------------------
-
-// ------------------
-// Rectangle manages
 //
-// rectangular, position
-// width, height stuff
-//
-// gives us css
-//
-// checks for intersections with:
-// line and rect and or circle
+// 1. Rectangle
+// 2. Squad
+// 3. Space
 // ------------------
 
 /**
  * @typedef {{
- *	x: Tapri.Signal<number>,
- *	y: Tapri.Signal<number>,
- *	w: Tapri.Signal<number>,
- *	h: Tapri.Signal<number>,
+ *	x: Chowk.Signal<number>,
+ *	y: Chowk.Signal<number>,
+ *	w: Chowk.Signal<number>,
+ *	h: Chowk.Signal<number>,
  *	unit: (axis: ("x" | "y")) => ("px" | "vh" | "vw" | "v" | "em")
  *	xAxis: ("left" | "right"),
  *	yAxis: ("top" | "bottom"),
  *	strategy: ("fixed" | "absolute"),
  *	css: () => () => string
  * }} Rectangle
- * */
-
-/**
+ *
+ *  ---
+ *  # Rectangle
+ *  Manages rectangular, position width, height stuff
+ *  gives us css and checks for intersections with: line and rect and or circle
+ *
+ *  example: 
+ *  ```js
+ *  ```
+ *  ---
+ *
  * @param {number} x 
  * @param {number} y 
  * @param {number} w 
@@ -192,7 +192,31 @@ function Rectangle(x, y, w, h, opts) {
 	}
 }
 
-function Environment() { }
+// -----------------------
+// Squad
+// ----
+// A squad is a grouping of a parent element, i.e a Rectangle
+// with it's children. Children can be other Rectangles or 
+// more squads. 
+//
+// Squad concept -> manages the movement of its memebers.
+// When parents move due to any reason, the squad makes sure to inform the children
+// so they can follow them around.
+// -----------------------
+
+function Squad(parent, children) { }
+
+
+// ------------------------
+// For any of these entities, to exist
+// they require a container, a conception of something to be in.
+//
+// Space, provides this concept. You can be (added) to a space
+// You can be (removed) from a space.
+// If you are in a space, you're bounded by its (time), 
+// and its (constraints)
+// ------------------------
+function Space() { }
 
 /**
  * @typedef {{
@@ -315,7 +339,6 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 	}, t)
 }
 
-
 /**@type RectangleDOM*/
 const Ornament = (() => {
 	let rectangle = Rectangle(20, 30, 25, 40, { unit: "v" })
@@ -360,7 +383,6 @@ const Resources = (() => {
 
 	return { css, html, rectangle }
 })()
-
 
 /**@type RectangleDOM*/
 let Schedule = (function() {

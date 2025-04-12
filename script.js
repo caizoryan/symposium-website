@@ -167,7 +167,6 @@ let style = mut([
 //
 // 1. #Rectangle;
 // 2. #Squad;
-// 3. #Clock;
 // 4. #Space;
 // ------------------
 
@@ -305,7 +304,17 @@ function Squad(parent, children) { }
  *	delta: number,
  *	elapsed: number,
  *	last: number,
+ *	destroy: () => void
  * }) => void} ClockCallback
+ *
+ * @typedef {{
+ *	start: Chowk.Signal<number>,
+ *	elapsed: Chowk.Signal<number>,
+ *	last: Chowk.Signal<number>,
+ *	add: (fn: ClockCallback) => void
+ * }} Clock
+ *
+ * @returns {Clock}
  * */
 
 function Clock() {
@@ -327,12 +336,13 @@ function Clock() {
 		i.start ? null : i.start = stamp
 		i.elapsed(stamp - i.start)
 
-		callbacks.forEach(e => e({
+		callbacks.forEach((e, index, c) => e({
 			stamp,
 			start: i.start,
 			delta: stamp - i.last(),
 			elapsed: i.elapsed(),
-			last: i.last()
+			last: i.last(),
+			destroy: () => c.splice(index, 1)
 		}))
 
 		i.last(stamp)
@@ -343,7 +353,7 @@ function Clock() {
 }
 
 let clock = Clock()
-clock.add((t) => console.log((t.elapsed / 1000).toFixed(2)))
+//clock.add((t) => console.log((t.elapsed / 1000).toFixed(2)))
 
 // ------------------------
 // #Space;
@@ -363,7 +373,6 @@ clock.add((t) => console.log((t.elapsed / 1000).toFixed(2)))
 // and its (constraints)
 // ------------------------
 function Space(style_ref) {
-
 	/**@type {Chowk.Signal<RectangleDOM[]>}*/
 	const space_entities = sig([])
 
@@ -460,6 +469,144 @@ function init_p5(el) {
 		r2 = 300 + p.sin(90 - an) * 120;
 	}
 }
+
+/**
+ * @typedef {{
+ *  start: number,
+ *  end: number,
+ *  duration: number,
+ *  easing?: string
+ * }} Keyframe
+ *
+ * @typedef {{
+ *   active: boolean,
+ *   looping: boolean,
+ *   elapsedTime: number,
+ *   activeMotion: number,
+ *   currentValue: number,
+ *   keyframes: Array<Keyframe>,
+ *   animate: () => void,
+ *   update: ClockCallback,
+ *   add: (key: Keyframe) => PropInstance,
+ *   loop: () => void,
+ *   val: () => number,
+ *   setEasing: (easing: string) => void,
+ * }} PropInstance
+ *
+ * @param {Clock} clock 
+ * @param {Keyframe[]} keyframes
+ * @param {(val:number) => void} setter 
+ * @returns {PropInstance}
+ */
+function Prop(clock, keyframes, setter) {
+	const api = {
+		active: true,
+		looping: false,
+		elapsedTime: 0,
+		activeMotion: 0,
+		currentValue: 0,
+		keyframes: keyframes.map(key => ({
+			start: key.start,
+			end: key.end,
+			duration: key.duration,
+			easing: key.easing ? key.easing : "linear"
+		})),
+
+		// Method to activate animation
+		animate() {
+			api.active = true
+		},
+
+		// Update method called on each frame, with time delta
+		/**@type {ClockCallback}*/
+		update(time) {
+			if (!_runChecks(time.destroy)) return
+			api.elapsedTime += time.delta
+			api.currentValue = _calculate(api.keyframes[api.activeMotion])
+			setter(api.currentValue)
+		},
+
+		// Add a new keyframe to the animation
+		/**@param { Keyframe } keyframe*/
+		add(keyframe) {
+			const last = api.keyframes[api.keyframes.length - 1]
+			api.keyframes.push({
+				start: last.end,
+				end: keyframe.end,
+				duration: keyframe.duration,
+				easing: keyframe.easing ? keyframe.easing : "linear"
+			})
+			return api
+		},
+
+		// Loop the animation
+		loop() {
+			api.looping = true
+		},
+
+		// Get the current value of the property
+		val() {
+			return api.currentValue
+		},
+
+		// Set the easing function for all keyframes
+		setEasing(easing) {
+			api.keyframes = api.keyframes.map(kf => ({
+				...kf,
+				easing
+			}))
+		},
+	}
+
+	// Check if animation should continue
+	const _runChecks = (destroy) => {
+		if (!api.active) return false
+
+		const motion = api.keyframes[api.activeMotion]
+
+		if (api.elapsedTime >= motion.duration) {
+			if (api.activeMotion < api.keyframes.length - 1) {
+				api.activeMotion++
+				api.elapsedTime = 0
+			} else {
+				if (api.looping) {
+					api.activeMotion = 0
+					api.elapsedTime = 0
+				} else {
+					api.active = false
+					destroy()
+					return false
+				}
+			}
+		}
+
+		return true
+	}
+
+	// Calculate the current value based on elapsed time and easing function
+	const _calculate = (motion) => {
+		const progress = api.elapsedTime / motion.duration
+		return _interpolate(motion.start, motion.end, progress, motion.easing)
+	}
+
+	// Interpolation based on easing function
+	const _interpolate = (start, end, amt, easing) => {
+		const easingFn = easing in Easings ? Easings[easing] : Easings.linear
+		return easingFn(amt) * (end - start) + start
+	}
+
+	clock.add(api.update)
+
+	return api
+}
+
+function Animator(clock) {
+	/**@param {Keyframe[]} keyframes*/
+	const prop = (keyframes, setter) => Prop(clock, keyframes, setter)
+	return { prop }
+}
+
+const animate = Animator(clock)
 
 /**
  * @param {Rectangle} rectangle
@@ -778,7 +925,26 @@ const maskcontainer = (first, second) => {
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
-space.add(maskcontainer(First, Second))
+let masked = maskcontainer(First, Second)
+space.add(masked)
+
+animate.prop([
+	{ start: 0, end: 20, duration: 1000 },
+	{ start: 50, end: 70, duration: 500 },
+	{ start: 0, end: 20, duration: 1000 },
+	{ start: 50, end: 70, duration: 500 },
+	{ start: 20, end: 90, duration: 1000 }
+], masked.rectangle.y)
+	.setEasing("OutCubic")
+
+animate.prop([
+	{ start: 5, end: 20, duration: 1000 },
+	{ start: 50, end: 70, duration: 1500 },
+	{ start: 5, end: 20, duration: 1000 },
+	{ start: 70, end: 90, duration: 1500 },
+	{ start: 20, end: 30, duration: 1000 }
+], masked.rectangle.x)
+	.loop()
 
 // -----------------------
 // (u) COMPONENT: Button
@@ -811,4 +977,36 @@ function label_number_input(label, getter, setter) {
 		}])
 	]
 }
+
+const Easings = {
+	// no easing, no acceleration
+	linear: (t) => t,
+	// accelerating from zero velocity
+	InQuad: (t) => t * t,
+	// decelerating to zero velocity
+	OutQuad: (t) => t * (2 - t),
+	// acceleration until halfway, then deceleration
+	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+	// accelerating from zero velocity
+	InCubic: (t) => t * t * t,
+	// decelerating to zero velocity
+	OutCubic: (t) => --t * t * t + 1,
+	// acceleration until halfway, then deceleration
+	InOutCubic: (t) =>
+		t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+	// accelerating from zero velocity
+	InQuart: (t) => t * t * t * t,
+	// decelerating to zero velocity
+	OutQuart: (t) => 1 - --t * t * t * t,
+	// acceleration until halfway, then deceleration
+	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
+	// accelerating from zero velocity
+	InQuint: (t) => t * t * t * t * t,
+	// decelerating to zero velocity
+	OutQuint: (t) => 1 + --t * t * t * t * t,
+	// acceleration until halfway, then deceleration
+	InOutQuint: (t) =>
+		t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
+};
+
 render(Main, document.body)

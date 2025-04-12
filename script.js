@@ -172,18 +172,27 @@ let style = mut([
 
 /**
  * @typedef {{
+ *		xAxis: ("left" | "right"),
+ *		unit: Unit,
+ *		yAxis: ("top" | "bottom"),
+ *		strategy: ("fixed" | "absolute"),
+ *		wUnit?: (Unit | undefined),
+ *		hUnit?: (Unit | undefined),
+ *		xUnit?: (Unit | undefined),
+ *		yUnit?: (Unit | undefined),
+ * }} RectangleOpts
+ *
+ * @typedef {{
  *	x: Chowk.Signal<number>,
  *	y: Chowk.Signal<number>,
  *	w: Chowk.Signal<number>,
  *	h: Chowk.Signal<number>,
- *	unit: (axis: ("x" | "y")) => ("px" | "vh" | "vw" | "v" | "em")
- *	xAxis: ("left" | "right"),
- *	yAxis: ("top" | "bottom"),
- *	strategy: ("fixed" | "absolute"),
+ *	unit: (axis: ("x" | "y" | "w" | "h")) => Unit,
+ *	opts: Chowk.Signal<RectangleOpts>,
  *	css: () => () => string
  * }} Rectangle
  *
- * @typedef {("px" | "vh" | "vw" | "v" | "em")} Unit
+ * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%")} Unit
  *  ---
  *  # Rectangle
  *  Manages rectangular, position width, height stuff
@@ -198,16 +207,7 @@ let style = mut([
  * @param {number} y 
  * @param {number} w 
  * @param {number} h 
- * @param {{
- *	unit?: Unit,
- *	xAxis?: ("left" | "right"),
- *	yAxis?: ("top" | "bottom"),
- *	strategy?: ("fixed" | "absolute")
- *	wUnit?: (Unit | undefined),
- *	hUnit?: (Unit | undefined),
- *	xUnit?: (Unit | undefined),
- *	yUnit?: (Unit | undefined),
- * }} opts
+ * @param {RectangleOpts} [opts]
  * @returns {Rectangle}
  * */
 function Rectangle(x, y, w, h, opts) {
@@ -243,9 +243,7 @@ function Rectangle(x, y, w, h, opts) {
 		w: _w,
 		h: _h,
 		unit: _unit,
-		xAxis: opts.xAxis,
-		yAxis: opts.yAxis,
-		strategy: opts.strategy,
+		opts: _opts,
 		css: () => mem(() =>
 			css(rect(
 				_x() + _unit("x"),
@@ -574,17 +572,26 @@ let Schedule = (function() {
 //----------------------------
 // TEMP
 //----------------------------
-// /**@type {RectangleDOM[]}*/
-// let comps = [Schedule, Information, Banner]
-// setInterval(() => {
-// 	comps.forEach((el) => {
-// 		seek_rect(random_pos(
-// 			el.rectangle.w(),
-// 			el.rectangle.h()),
-// 			el.rectangle,
-// 			5.5, 300)
-// 	})
-// }, 5000)
+/**@type {RectangleDOM[]}*/
+let comps = [Schedule, Information, Banner]
+
+comps.forEach((el) => {
+	seek_rect(random_pos(
+		el.rectangle.w(),
+		el.rectangle.h()),
+		el.rectangle,
+		5.5, 300)
+})
+
+setInterval(() => {
+	comps.forEach((el) => {
+		seek_rect(random_pos(
+			el.rectangle.w(),
+			el.rectangle.h()),
+			el.rectangle,
+			5.5, 300)
+	})
+}, 15000)
 
 
 const Stage = (() => {
@@ -606,39 +613,111 @@ document.body.onmousemove = (e) => {
 	mouse_y(e.clientY)
 }
 // -----------------------
+//
+
+/**@type {RectangleDOM}*/
+const First = (() => {
+	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
+	let inlinecss = rectangle.css()
+	let html = () => hdom([".test-box", { style: inlinecss }, "Alternative"])
+	let css = [".test-box", {
+		padding: [[rem(.5), rem(1)]],
+		"font-family": "anthony",
+		"background-color": colors.highlight, color: "white", transition: "all 700ms ease-in"
+	}]
+
+	return { html, css, rectangle }
+})()
+
+/**@type {RectangleDOM}*/
+const Second = (() => {
+	let rectangle = Rectangle(0, 0, 100, 100)
+	let inlinecss = rectangle.css()
+	let html = () => hdom([".test-box", { style: inlinecss }, "Practices"])
+	return { html, css, rectangle }
+})()
 
 /**
  * @param {RectangleDOM} first 
  * @param {RectangleDOM} second 
+ * @returns {RectangleDOM}
  * */
 const maskcontainer = (first, second) => {
 	// will get containers items that take 100% w and h 	
 	const first_class = sig("bottom")
 	const second_class = sig("top")
 
+	const overrides = {
+		wUnit: "%",
+		hUnit: "%",
+		xUnit: "%",
+		yUnit: "%",
+		strategy: "absolute"
+	}
+
+	const runoveride = (el) => {
+		let opts = el.rectangle.opts()
+		let new_opts = Object.assign(opts, overrides)
+		el.rectangle.opts(new_opts)
+	}
+
+	const init = () => {
+		runoveride(first)
+		runoveride(second)
+	}
+
+	init()
+
+	const runreset = (el) => {
+		el.rectangle.x(0)
+		el.rectangle.y(0)
+		el.rectangle.w(100)
+		el.rectangle.h(100)
+	}
+
 	const reset = () => {
-		[first, second].forEach(el => {
-			el.rectangle.w(100)
-			el.rectangle.h(100)
-		})
+		runreset(first)
+		runreset(second)
 	}
 
 	const onanimationend = () => {
-		reset()
 		swap()
+		reset()
 	}
 
-	// this will swap on animation end
-	const ordered = sig([first.html, second.html])
+	const animate = () => {
+		ordered()[1].rectangle.x(100)
+		ordered()[1].rectangle.w(0)
+
+		setTimeout(() => {
+			onanimationend()
+			setTimeout(animate, 500)
+		}, 2000)
+	}
+
+	/**@type {Chowk.Signal<RectangleDOM[]>}*/
+	const ordered = sig([first, second])
 	const swap = () => {
 		let f = ordered()[0]
 		let s = ordered()[1]
 		ordered([s, f])
 	}
 
-	const html = () => hdom([])
+	const rectangle = Rectangle(1, 94, 20, 5, { unit: "v" })
+	const cssref = rectangle.css()
+	const inlinecss = mem(() => cssref() + "overflow: hidden;")
+	const render = e => e.html()
+	const html = () => hdom([".masked",
+		{ style: inlinecss },
+		() => each(ordered, render)
+	])
 
+	animate()
+
+	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
+
+space.add(maskcontainer(First, Second))
 
 // -----------------------
 // (u) COMPONENT: Button

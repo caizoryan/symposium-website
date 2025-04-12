@@ -17,7 +17,7 @@ can also go into public and start a live server, or python server.
 # Stack
 
 ### Solid's Reactivity
-Uses solids signals, wrapped in tapri/monke.js for ergonomics. Mostly did it as a learning exercise, but has proved to be a lot more fun writing
+Uses solids signals, wrapped in chowk/monke.js for ergonomics. Mostly did it as a learning exercise, but has proved to be a lot more fun writing
 
 ```js
 const reactive = sig(2)

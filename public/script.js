@@ -179,6 +179,8 @@ let style = mut([
 /**
  * @typedef {{
  *	navigate_to : (x: number, y: number, increment?: number, interval?: number) => void
+ *	destination : Chowk.Signal<{x: number, y: number}>,
+ *	timeline: TimelineInstance,
  *	}} Navigator
  * @param {Rectangle} rectangle 
  * @returns {Navigator}
@@ -187,7 +189,7 @@ function Navigator(rectangle) {
 	// init with a ref to rectangle
 
 	/**@type {TimelineInstance}*/
-	let animation = Timeline()
+	let timeline = Timeline()
 
 	/**
 	 * @typedef {{
@@ -220,14 +222,16 @@ function Navigator(rectangle) {
 		return api
 	}
 
+	let destination = sig({ x: rectangle.x(), y: rectangle.y() })
 
 	const navigate_to = (x, y, inc, int) => {
-		animation.clear()
+		timeline.clear()
+		destination({ x, y })
 
 		// will return based on dimensions...
-		const increment = () => inc ? inc : 5
+		const increment = () => inc ? inc : 15
 		// will return based on dimensions...
-		const interval = () => int ? int : 300
+		const interval = () => int ? int : 500
 
 
 		/**@type {Accumalator}*/ let x_
@@ -247,8 +251,8 @@ function Navigator(rectangle) {
 			item.addnext()
 		}
 
-		animation.add(animate.prop(x_.padded, rectangle.x).setEasing("InOutCubic"))
-		animation.add(animate.prop(y_.padded, rectangle.y).setEasing("InOutCubic"))
+		timeline.add(animate.prop(x_.padded, rectangle.x).setEasing("InOutCubic"))
+		timeline.add(animate.prop(y_.padded, rectangle.y).setEasing("InOutCubic"))
 	}
 
 	/**@returns {Keyframe[]}*/
@@ -280,7 +284,7 @@ function Navigator(rectangle) {
 	// will manage an instace of animation
 	// if new navigation request comes, dispose animation and create new
 	//
-	return { navigate_to }
+	return { navigate_to, destination, timeline }
 }
 
 /**
@@ -358,7 +362,6 @@ function Rectangle(x, y, w, h, opts) {
 		h: _h(),
 	}))
 
-	eff_on(derived, () => children.forEach(child => child.follow(derived())))
 
 	/**@param {("x" | "y" | "w" | "h")}  prop*/
 	const _unit = (prop) => {
@@ -400,6 +403,13 @@ function Rectangle(x, y, w, h, opts) {
 
 	let navigator = Navigator(api)
 	api.navigator = navigator
+
+	eff_on(navigator.destination,
+		() => children.forEach(child =>
+			child.follow(
+				Object.assign(derived(), navigator.destination())
+			)))
+
 	return api
 }
 
@@ -537,7 +547,7 @@ document.addEventListener("visibilitychange", () => {
 // and its (constraints)
 // ------------------------
 function Space(style_ref) {
-	/**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
+	///**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
 	const space_entities = sig([])
 
 	const add_css = (css) => style_ref.push(css)
@@ -546,7 +556,6 @@ function Space(style_ref) {
 	 * @param {{
 	 *	html: any,
 	 *	css: any,
-	 *	rectangle: Rectangle,
 	 * }} el
 	 * */
 	const add = (el) => {
@@ -943,7 +952,7 @@ let Schedule = (function() {
 			//transition: [["all", ms(200)]],
 			cursor: "crosshair",
 			display: "grid",
-			"grid-template-rows": [[percent(20), percent(80)]]
+			"grid-template-rows": [[percent(15), percent(85)]]
 		},
 
 		["h2", { "padding": rem(1) }],
@@ -980,19 +989,8 @@ let Schedule = (function() {
 	let inlincecss = rectangle.css()
 
 	const html =
-		[".schedule",
-			{
-				onmouseenter: (e) => e.target == e.currentTarget
-					? rectangle.y(rectangle.y() + (Math.random() * 5) - 2.5)
-					: null,
-
-				onmouseleave: (e) => e.target == e.currentTarget
-					? rectangle.y(Math.random() * 50)
-					: null,
-
-				style: inlincecss
-			},
-			["h2", "Schedule"],
+		[".schedule", { style: inlincecss },
+			["h2", ""],
 			[".schedule-container",
 				[".section",
 					[".title", "Eric Francisco"],
@@ -1029,28 +1027,6 @@ let Schedule = (function() {
 })()
 
 
-//----------------------------
-// TEMP
-//----------------------------
-/**@type {RectangleDOM[]}*/
-let comps = [Schedule, Information, Banner]
-
-comps.forEach((el) => {
-	let pos = random_pos(
-		el.rectangle.w(),
-		el.rectangle.h())
-	el.rectangle.navigator.navigate_to(pos.x, pos.y)
-})
-
-//
-setInterval(() => {
-	comps.forEach((el) => {
-		let pos = random_pos(
-			el.rectangle.w(),
-			el.rectangle.h())
-		el.rectangle.navigator.navigate_to(pos.x, pos.y)
-	})
-}, 5000)
 
 
 const Stage = (() => {
@@ -1078,13 +1054,13 @@ document.body.onmousemove = (e) => {
 const First = (() => {
 	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
 	let ref = rectangle.css()
-	let inlinecss = () => ref() + `background: ${colors.white};color: ${colors.highlight};`
-	let word = sig("Alternative")
-	let html = () => hdom([".test-box", { style: inlinecss }, word])
+	let inlinecss = () => ref()
+	let word = sig("Schedule")
+	let html = () => hdom([".test-box", { style: inlinecss }, ["h2", { style: 'font-family: "cirrus";font-weight: 100;' }, word]])
 	let css = [".test-box", {
 		padding: [[rem(.5), rem(1)]],
 		"font-family": "anthony",
-		"background-color": colors.highlight, color: "white",
+		"background-color": colors.white, color: colors.text,
 		//transition: "all 400ms ease-in"
 	}]
 
@@ -1095,7 +1071,7 @@ const First = (() => {
 const Second = (() => {
 	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
 	let inlinecss = rectangle.css()
-	let html = () => hdom([".test-box", { style: inlinecss }, "Practices"])
+	let html = () => hdom([".test-box", { style: inlinecss }, ["h2", "Schedule"]])
 	return { html, css, rectangle }
 })()
 
@@ -1132,7 +1108,10 @@ const maskcontainer = (first, second) => {
 		let onend = onanimationend
 
 		animate.prop(
-			[{ start, end, duration: 500, onend }],
+			[
+				{ start, end: start, duration: 1500 },
+				{ start, end, duration: 500, onend }
+			],
 			ordered()[1].rectangle[axis]
 		).setEasing("InCubic")
 	}
@@ -1145,7 +1124,7 @@ const maskcontainer = (first, second) => {
 		ordered([s, f])
 	}
 
-	const rectangle = Rectangle(1, 94, 20, 5, { unit: "v" })
+	const rectangle = Rectangle(1, 94, 250, 10, { unit: "v", wUnit: "px" })
 	const cssref = rectangle.css()
 	const inlinecss = mem(() => cssref() + "overflow: hidden;")
 	const render = e => e.html()
@@ -1156,7 +1135,36 @@ const maskcontainer = (first, second) => {
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
-let masked = maskcontainer(First, Second)
+let dom = maskcontainer(First, Second)
+
+/**@returns {Keyframe[]}*/
+let jump = (initial, then) => {
+	let top = initial - 5
+	return [
+		{ start: initial, end: top, duration: 350, easing: "OutCubic" },
+		{ start: top, end: top - .5, duration: 150, easing: "OutCubic" },
+		{ start: top - .5, end: initial - .5, duration: 150, easing: "InCubic" },
+		{ start: initial - .5, end: initial, duration: 350, easing: "InCubic", onend: then },
+	]
+}
+
+let offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
+
+let masked = Child(dom, (dims) => {
+	setTimeout(() => {
+		let actual = () => dom.rectangle.navigator.navigate_to(
+			dims.x + offset(3), dims.y + offset(4) - 2, 8, 250)
+		let jumpy = () => {
+			let tl = dom.rectangle.navigator.timeline
+			tl.clear()
+			tl.add(animate.prop(jump(dom.rectangle.y(), actual), dom.rectangle.y))
+		}
+
+		toss() ? jumpy() : actual()
+	}, 700)
+})
+
+Schedule.rectangle.add_child(masked)
 space.add(masked)
 
 // -----------------------
@@ -1208,3 +1216,26 @@ const Easings = {
 };
 
 render(Main, document.body)
+
+//----------------------------
+// TEMP
+//----------------------------
+/**@type {RectangleDOM[]}*/
+let comps = [Schedule, Information, Banner]
+
+comps.forEach((el) => {
+	let pos = random_pos(
+		el.rectangle.w(),
+		el.rectangle.h())
+	el.rectangle.navigator.navigate_to(pos.x, pos.y, 20, 800)
+})
+
+//
+setInterval(() => {
+	comps.forEach((el) => {
+		let pos = random_pos(
+			el.rectangle.w(),
+			el.rectangle.h())
+		el.rectangle.navigator.navigate_to(pos.x, pos.y)
+	})
+}, 5000)

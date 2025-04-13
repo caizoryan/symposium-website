@@ -1316,4 +1316,4 @@ setInterval(() => {
 			el.rectangle.h())
 		el.rectangle.navigator.navigate_to(pos.x, pos.y)
 	})
-}, 500)
+}, 3500)

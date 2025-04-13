@@ -479,6 +479,7 @@ function Clock() {
 	/**@type {FrameRequestCallback}*/
 	const run = stamp => {
 		requestAnimationFrame(run)
+		console.log("cb", callbacks.length)
 
 		i.start ? null : i.start = stamp
 		i.elapsed(stamp - i.start)
@@ -1316,4 +1317,4 @@ setInterval(() => {
 			el.rectangle.h())
 		el.rectangle.navigator.navigate_to(pos.x, pos.y)
 	})
-}, 3500)
+}, 5000)

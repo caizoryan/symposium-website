@@ -166,10 +166,122 @@ let style = mut([
 // ------------------
 // *Header: (Game) Components
 //
-// 1. #Rectangle;
-// 2. #Squad;
+// 1. #Navigator;
+// 2. #Rectangle;
+// 3. #Squad;
 // 4. #Space;
 // ------------------
+
+// -----------------------
+// gets ref to Rectangle
+// ----------------------
+
+/**
+ * @typedef {{
+ *	navigate_to : (x: number, y: number, increment?: number, interval?: number) => void
+ *	}} Navigator
+ * @param {Rectangle} rectangle 
+ * @returns {Navigator}
+ * */
+function Navigator(rectangle) {
+	// init with a ref to rectangle
+
+	/**@type {TimelineInstance}*/
+	let animation = Timeline()
+
+	/**
+	 * @typedef {{
+	 *	queue: Keyframe[],
+	 *	padded: Keyframe[],
+	 *	last_value: number,
+	 *	addempty: (duration: number) => void,
+	 *	addnext: () => void,
+	 * }} Accumalator
+	 * @param {Keyframe[]} keys
+	 * @returns {Accumalator}
+	 * */
+	let accumalator = (keys) => {
+		/**@type {Accumalator}*/
+		let api = {
+			queue: keys,
+			padded: [],
+			last_value: keys[0].start,
+			addempty: (duration) => {
+				let key = { start: api.last_value, end: api.last_value, duration }
+				api.padded.push(key)
+			},
+			addnext: () => {
+				let last = api.queue.shift()
+				api.padded.push(last)
+				api.last_value = last.end
+			}
+		}
+
+		return api
+	}
+
+
+	const navigate_to = (x, y, inc, int) => {
+		animation.clear()
+
+		// will return based on dimensions...
+		const increment = () => inc ? inc : 5
+		// will return based on dimensions...
+		const interval = () => int ? int : 300
+
+
+		/**@type {Accumalator}*/ let x_
+		/**@type {Accumalator}*/ let y_
+
+		if (x !== undefined) { x_ = accumalator(generate(rectangle.x(), x, increment(), interval())) }
+		if (y !== undefined) { y_ = accumalator(generate(rectangle.y(), y, increment(), interval())) }
+
+		let count = 0
+		while (x_.queue.length > 0 || y_.queue.length > 0) {
+			count++
+			let opts = [x_, y_]
+			let random = Math.floor(Math.random() * opts.length)
+			let item = opts.splice(random, 1)[0]
+			if (item.queue.length == 0) continue
+			opts.forEach(e => e.addempty(interval()))
+			item.addnext()
+		}
+
+		animation.add(animate.prop(x_.padded, rectangle.x).setEasing("InOutCubic"))
+		animation.add(animate.prop(y_.padded, rectangle.y).setEasing("InOutCubic"))
+	}
+
+	/**@returns {Keyframe[]}*/
+	const generate = (from, to, increment, interval) => {
+		let diff = to - from
+		let iterations = Math.ceil(Math.abs(diff) / increment)
+		let last = from
+
+		/**@type {Keyframe[]}*/
+		let keyframes = Array(iterations).fill(0).map(e => {
+			let direction = last < to ? 1 : -1
+			let end = last + (increment * direction)
+			let crossed = direction > 0 ? end > to : end < to
+			end = crossed ? to : end
+
+			let key = {
+				start: last,
+				end,
+				duration: interval
+			}
+
+			last = end
+			return key
+		})
+
+		return keyframes
+	}
+
+	// will manage an instace of animation
+	// if new navigation request comes, dispose animation and create new
+	//
+	return { navigate_to }
+}
 
 /**
  * @typedef {{
@@ -194,8 +306,10 @@ let style = mut([
  *	y: Chowk.Signal<number>,
  *	w: Chowk.Signal<number>,
  *	h: Chowk.Signal<number>,
+ *	navigator: Navigator,
  *	unit: (axis: ("x" | "y" | "w" | "h")) => Unit,
  *	opts: Chowk.Signal<RectangleOpts>,
+ *	add_child: (child: RectangleDOMChild) => void,
  *	css: () => () => string
  * }} Rectangle
  *
@@ -212,7 +326,8 @@ let style = mut([
  *
  * TODO: Rectangle should own its animation queue: either in the form of set interval, or a queue that queues timeouts...
  * TODO: Rectangle should have animation props
- * TODO: Rectangle should a translate strategy
+ * TODO: Rectangle should a material, grid, lines, color, etc... -> with texture/image...
+ * TODO: Rectangle should add children... on navigationChanged, follow children. Children have their own navigators.
  * TODO: Rotation and scale?
  * 
  * @param {number} x 
@@ -229,8 +344,23 @@ function Rectangle(x, y, w, h, opts) {
 	const _y = sig(y)
 	const _w = sig(w)
 	const _h = sig(h)
-	/**@param {("x" | "y" | "w" | "h")}  prop*/
 
+	/**@type {RectangleDOMChild[]}*/
+	const children = []
+
+	/**@param {RectangleDOMChild} child*/
+	const add_child = (child) => children.push(child)
+
+	const derived = mem(() => ({
+		x: _x(),
+		y: _y(),
+		w: _w(),
+		h: _h(),
+	}))
+
+	eff_on(derived, () => children.forEach(child => child.follow(derived())))
+
+	/**@param {("x" | "y" | "w" | "h")}  prop*/
 	const _unit = (prop) => {
 		let def = (axis) => _opts().unit == "v"
 			? axis == "x" ? "vw" : "vh"
@@ -249,12 +379,14 @@ function Rectangle(x, y, w, h, opts) {
 			? _opts().hUnit : def("y")
 	}
 
-	return {
+	/**@type {Rectangle}*/
+	const api = {
 		x: _x,
 		y: _y,
 		w: _w,
 		h: _h,
 		unit: _unit,
+		add_child,
 		opts: _opts,
 		css: () => mem(() =>
 			css(rect(
@@ -265,6 +397,24 @@ function Rectangle(x, y, w, h, opts) {
 				_opts()
 			)))
 	}
+
+	let navigator = Navigator(api)
+	api.navigator = navigator
+	return api
+}
+
+/**
+ * @param {RectangleDOM} element
+ * @param {(bounding: {x: number, y: number, w: number, h: number}) => void} followfn 
+ * @returns {RectangleDOMChild}  
+ * */
+function Child(element, followfn) {
+	let html = element.html
+	let css = element.css
+	let rectangle = element.rectangle
+	let follow = followfn
+
+	return { html, css, rectangle, follow }
 }
 
 // -----------------------
@@ -309,20 +459,26 @@ function Squad(parent, children) { }
  * }) => void} ClockCallback
  *
  * @typedef {{
- *	start: Chowk.Signal<number>,
+ *	start: number,
  *	elapsed: Chowk.Signal<number>,
  *	last: Chowk.Signal<number>,
  *	add: (fn: ClockCallback) => void
+ *	pause: () => void,
+ *	play: () => void,
+ *	paused: boolean
  * }} Clock
  *
  * @returns {Clock}
  * */
-
 function Clock() {
 	/**@type {ClockCallback[]}*/
 	const callbacks = []
 
+	/**@type {Clock}*/
 	const i = {}
+	i.paused = false
+	i.pause = () => i.paused = false
+	i.play = () => i.paused = true
 	i.start = undefined
 	i.elapsed = sig(0)
 	i.last = sig(0)
@@ -337,16 +493,19 @@ function Clock() {
 		i.start ? null : i.start = stamp
 		i.elapsed(stamp - i.start)
 
-		callbacks.forEach((e, index, c) => e({
-			stamp,
-			start: i.start,
-			delta: stamp - i.last(),
-			elapsed: i.elapsed(),
-			last: i.last(),
-			destroy: () => c.splice(index, 1)
-		}))
+		if (!i.paused) {
+			callbacks.forEach((e, index, c) => e({
+				stamp,
+				start: i.start,
+				delta: stamp - i.last(),
+				elapsed: i.elapsed(),
+				last: i.last(),
+				destroy: () => c.splice(index, 1)
+			}))
+		}
 
 		i.last(stamp)
+		console.log("cbs", callbacks.length)
 	}
 
 	requestAnimationFrame(run)
@@ -355,6 +514,10 @@ function Clock() {
 
 let clock = Clock()
 //clock.add((t) => console.log((t.elapsed / 1000).toFixed(2)))
+document.addEventListener("visibilitychange", () => {
+	if (document.hidden) clock.pause()
+	else clock.play()
+});
 
 // ------------------------
 // #Space;
@@ -374,10 +537,18 @@ let clock = Clock()
 // and its (constraints)
 // ------------------------
 function Space(style_ref) {
-	/**@type {Chowk.Signal<RectangleDOM[]>}*/
+	/**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
 	const space_entities = sig([])
 
 	const add_css = (css) => style_ref.push(css)
+
+	/**
+	 * @param {{
+	 *	html: any,
+	 *	css: any,
+	 *	rectangle: Rectangle,
+	 * }} el
+	 * */
 	const add = (el) => {
 		if (el.css) add_css(el.css)
 		space_entities([...space_entities(), el])
@@ -403,6 +574,15 @@ let space = Space(style)
  *	css: any,
  *	rectangle: Rectangle
  * }} RectangleDOM
+ * */
+
+/**
+ * @typedef {{
+ *	html: any,
+ *	css: any,
+ *	rectangle: Rectangle,
+ *	follow: (bounding: {x: number, y: number, w: number, h: number}) => void
+ * }} RectangleDOMChild
  * */
 
 // -----------------------
@@ -488,12 +668,13 @@ function init_p5(el) {
  *   activeMotion: number,
  *   currentValue: number,
  *   keyframes: Array<Keyframe>,
+ *   destroy: () => void,
  *   animate: () => void,
  *   update: ClockCallback,
  *   add: (key: Keyframe) => PropInstance,
  *   loop: () => void,
  *   val: () => number,
- *   setEasing: (easing: string) => void,
+ *   setEasing: (easing: string) => PropInstance,
  * }} PropInstance
  *
  * @param {Clock} clock 
@@ -502,6 +683,7 @@ function init_p5(el) {
  * @returns {PropInstance}
  */
 function Prop(clock, keyframes, setter) {
+	let should_destroy = false
 	/**@type {PropInstance}*/
 	const api = {
 		active: true,
@@ -523,7 +705,6 @@ function Prop(clock, keyframes, setter) {
 		/**@type {ClockCallback}*/
 		update(time) {
 			let fps = 1000 / time.delta
-			console.log(fps)
 
 			if (!_runChecks(time.destroy)) return
 			let motion = api.keyframes[api.activeMotion]
@@ -550,14 +731,16 @@ function Prop(clock, keyframes, setter) {
 			return api
 		},
 
+		destroy() { should_destroy = true },
 		animate() { api.active = true },
 		loop() { api.looping = true },
 		val() { return api.currentValue },
-		setEasing(easing) { api.keyframes.forEach((_, i, c) => c[i].easing = easing) },
+		setEasing(easing) { api.keyframes.forEach((_, i, c) => c[i].easing = easing); return api },
 	}
 
 	// Check if animation should continue
 	const _runChecks = (destroy) => {
+		if (should_destroy) destroy()
 		if (!api.active) return false
 
 		const motion = api.keyframes[api.activeMotion]
@@ -600,6 +783,53 @@ function Prop(clock, keyframes, setter) {
 	return api
 }
 
+/**
+ * @typedef {{
+ *   add: (prop: PropInstance) => TimelineInstance,
+ *   loop: () => TimelineInstance,
+ *   animate: () => TimelineInstance,
+ *   setEasing: (easing: string) => TimelineInstance,
+ *   pause: () => TimelineInstance,
+ *   clear: () => void,
+ * }} TimelineInstance
+ *
+ * @returns {TimelineInstance}
+ */
+function Timeline() {
+	/** @type {PropInstance[]} */
+	const props = [];
+
+	/** @type {TimelineInstance} */
+	const api = {
+		add(prop) {
+			props.push(prop);
+			return api;
+		},
+		loop() {
+			props.forEach(p => p.loop());
+			return api;
+		},
+		animate() {
+			props.forEach(p => p.animate());
+			return api;
+		},
+		pause() {
+			props.forEach(p => p.active = false);
+			return api;
+		},
+		setEasing(easing) {
+			props.forEach(p => p.setEasing(easing));
+			return api;
+		},
+		clear() {
+			props.forEach(p => p.destroy());
+			props.length = 0;
+		},
+	};
+
+	return api;
+}
+
 function Animator(clock) {
 	/**@param {Keyframe[]} keyframes*/
 	const prop = (keyframes, setter) => Prop(clock, keyframes, setter)
@@ -626,14 +856,21 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 	let need_update_x = Math.abs(diff_x) > inc
 	let need_update_y = Math.abs(diff_y) > inc
 
+	let onend = () => seek_rect(pos, rectangle, inc, t, timeout)
 	let update_fn_x = () => {
-		rectangle.x(new_x)
-		seek_rect(pos, rectangle, inc, t, timeout)
+		let start = rectangle.x()
+		let end = new_x
+
+		animate.prop([{ start, end, duration: t + 50, onend }], rectangle.x).setEasing("OutQuart")
 	}
 
 	let update_fn_y = () => {
-		rectangle.y(new_y)
-		seek_rect(pos, rectangle, inc, t, timeout)
+		let start = rectangle.y()
+		let end = new_y
+
+		animate
+			.prop([{ start, end, duration: t + 50, onend }], rectangle.y)
+			.setEasing("OutQuart")
 	}
 
 	let fns = []
@@ -703,7 +940,7 @@ let Schedule = (function() {
 			"font-family": "monospace",
 			background: colors.white,
 			color: () => colors.text,
-			transition: [["all", ms(200)]],
+			//transition: [["all", ms(200)]],
 			cursor: "crosshair",
 			display: "grid",
 			"grid-template-rows": [[percent(20), percent(80)]]
@@ -799,22 +1036,21 @@ let Schedule = (function() {
 let comps = [Schedule, Information, Banner]
 
 comps.forEach((el) => {
-	seek_rect(random_pos(
+	let pos = random_pos(
 		el.rectangle.w(),
-		el.rectangle.h()),
-		el.rectangle,
-		5.5, 300)
+		el.rectangle.h())
+	el.rectangle.navigator.navigate_to(pos.x, pos.y)
 })
 
+//
 setInterval(() => {
 	comps.forEach((el) => {
-		seek_rect(random_pos(
+		let pos = random_pos(
 			el.rectangle.w(),
-			el.rectangle.h()),
-			el.rectangle,
-			5.5, 300)
+			el.rectangle.h())
+		el.rectangle.navigator.navigate_to(pos.x, pos.y)
 	})
-}, 15000)
+}, 5000)
 
 
 const Stage = (() => {
@@ -892,7 +1128,7 @@ const maskcontainer = (first, second) => {
 		let axis = toss() ? "x" : "y"
 
 		let start = ordered()[1].rectangle[axis]()
-		let end = ordered()[1].rectangle[axis](150 * direction)
+		let end = 100 * direction
 		let onend = onanimationend
 
 		animate.prop(

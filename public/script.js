@@ -67,7 +67,7 @@ const colors = mut({
 	base: "#E5FD53",
 	highlight: "#9366C3",
 	text: "#268E17",
-	white: "#FFFFFF",
+	white: "#eeeeee",
 	black: "#4D4D4D"
 })
 
@@ -153,7 +153,7 @@ let style = mut([
 
 	[".main", {
 		position: "fixed",
-		background: colors.base,
+		background: colors.white,
 		"background-size": [[px(100), px(100)]],
 		"background-image": [
 			"linear-gradient(to right, #2222 1px, transparent 1px)",
@@ -207,7 +207,7 @@ function Navigator(rectangle) {
 		let api = {
 			queue: keys,
 			padded: [],
-			last_value: keys[0].start,
+			last_value: keys[0]?.start,
 			addempty: (duration) => {
 				let key = { start: api.last_value, end: api.last_value, duration }
 				api.padded.push(key)
@@ -240,9 +240,7 @@ function Navigator(rectangle) {
 		if (x !== undefined) { x_ = accumalator(generate(rectangle.x(), x, increment(), interval())) }
 		if (y !== undefined) { y_ = accumalator(generate(rectangle.y(), y, increment(), interval())) }
 
-		let count = 0
 		while (x_.queue.length > 0 || y_.queue.length > 0) {
-			count++
 			let opts = [x_, y_]
 			let random = Math.floor(Math.random() * opts.length)
 			let item = opts.splice(random, 1)[0]
@@ -288,134 +286,116 @@ function Navigator(rectangle) {
 }
 
 /**
- * @typedef {{
- *	animate?: boolean,
- *	props?: {prop: string, ms: number}[], 
- *	ms?: number,
- * }} AnimationOpts
- *
- * @typedef {{
- *		xAxis?: ("left" | "right"),
- *		unit?: Unit,
- *		yAxis?: ("top" | "bottom"),
- *		strategy?: ("fixed" | "absolute"),
- *		wUnit?: (Unit | undefined),
- *		hUnit?: (Unit | undefined),
- *		xUnit?: (Unit | undefined),
- *		yUnit?: (Unit | undefined),
- * }} RectangleOpts
- *
- * @typedef {{
- *	x: Chowk.Signal<number>,
- *	y: Chowk.Signal<number>,
- *	w: Chowk.Signal<number>,
- *	h: Chowk.Signal<number>,
- *	navigator: Navigator,
- *	unit: (axis: ("x" | "y" | "w" | "h")) => Unit,
- *	opts: Chowk.Signal<RectangleOpts>,
- *	add_child: (child: RectangleDOMChild) => void,
- *	css: () => () => string
- * }} Rectangle
- *
  * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%")} Unit
- *  ---
- *  #Rectangle;
- *  Manages rectangular, position width, height stuff
- *  gives us css and checks for intersections with: line and rect and or circle
- *
- *  example: 
- *  ```js
- *  ```
- *  ---
- *
- * TODO: Rectangle should own its animation queue: either in the form of set interval, or a queue that queues timeouts...
- * TODO: Rectangle should have animation props
- * TODO: Rectangle should a material, grid, lines, color, etc... -> with texture/image...
- * TODO: Rectangle should add children... on navigationChanged, follow children. Children have their own navigators.
- * TODO: Rotation and scale?
- * 
- * @param {number} x 
- * @param {number} y 
- * @param {number} w 
- * @param {number} h 
- * @param {RectangleOpts} [opts]
- * @returns {Rectangle}
- * */
-function Rectangle(x, y, w, h, opts) {
-	const default_opts = { xAxis: "left", yAxis: "top", strategy: "fixed", unit: "px" }
-	const _opts = sig(Object.assign(default_opts, opts))
-	const _x = sig(x)
-	const _y = sig(y)
-	const _w = sig(w)
-	const _h = sig(h)
+ * @typedef {{
+ *   color?: string,
+ *   opacity?: string,
+ *   background?: string,
+ *   "background-image"?: string,
+ *   "background-size"?: string,
+ *   "background-position"?: string,
+ *   css: () => string
+ * }} Material
+ * @typedef {{
+ *   xAxis?: ("left" | "right"),
+ *   unit?: Unit,
+ *   yAxis?: ("top" | "bottom"),
+ *   strategy?: ("fixed" | "absolute"),
+ *   wUnit?: Unit,
+ *   hUnit?: Unit,
+ *   xUnit?: Unit,
+ *   yUnit?: Unit,
+ *   material?: Material
+ * }} RectangleOpts
+ */
+class Rectangle {
 
-	/**@type {RectangleDOMChild[]}*/
-	const children = []
+	/**
+	 * @param {number} x 
+	 * @param {number} y 
+	 * @param {number} w 
+	 * @param {number} h 
+	 * @param {RectangleOpts} [opts]
+	 */
+	constructor(x, y, w, h, opts) {
+		const default_opts = { xAxis: "left", yAxis: "top", strategy: "fixed", unit: "px" }
+		/** @type {Chowk.Signal<RectangleOpts>} */
+		this.opts = sig(Object.assign({}, default_opts, opts))
 
-	/**@param {RectangleDOMChild} child*/
-	const add_child = (child) => children.push(child)
+		this.x = sig(x)
+		this.y = sig(y)
+		this.w = sig(w)
+		this.h = sig(h)
 
-	const derived = mem(() => ({
-		x: _x(),
-		y: _y(),
-		w: _w(),
-		h: _h(),
-	}))
+		/** @type {RectangleDOMChild[]} */
+		this.children = []
 
+		this.navigator = Navigator(this)
 
-	/**@param {("x" | "y" | "w" | "h")}  prop*/
-	const _unit = (prop) => {
-		let def = (axis) => _opts().unit == "v"
-			? axis == "x" ? "vw" : "vh"
-			: _opts().unit
+		// Reactions
+		const derived = mem(() => ({
+			x: this.x(),
+			y: this.y(),
+			w: this.w(),
+			h: this.h(),
+		}))
 
-		if (prop == "x") return _opts().xUnit
-			? _opts().xUnit : def("x")
+		eff_on(this.navigator.destination, () =>
+			this.children.forEach(child => {
+				const obj = {
+					...derived(),
+					...this.navigator.destination()
+				}
 
-		if (prop == "y") return _opts().yUnit
-			? _opts().yUnit : def("y")
-
-		if (prop == "w") return _opts().wUnit
-			? _opts().wUnit : def("x")
-
-		if (prop == "h") return _opts().hUnit
-			? _opts().hUnit : def("y")
+				child.follow(obj)
+			})
+		)
 	}
 
-	/**@type {Rectangle}*/
-	const api = {
-		x: _x,
-		y: _y,
-		w: _w,
-		h: _h,
-		unit: _unit,
-		add_child,
-		opts: _opts,
-		css: () => mem(() =>
+	/**
+	 * @param {RectangleDOMChild} child
+	 */
+	add_child(child) {
+		this.children.push(child)
+	}
+
+	/**
+	 * @param {("x" | "y" | "w" | "h")} prop
+	 * @returns {Unit}
+	 */
+	unit(prop) {
+		const _opts = this.opts()
+		const def = (axis) => _opts.unit === "v"
+			? axis === "x" ? "vw" : "vh"
+			: _opts.unit
+
+		if (prop === "x") return _opts.xUnit ?? def("x")
+		if (prop === "y") return _opts.yUnit ?? def("y")
+		if (prop === "w") return _opts.wUnit ?? def("x")
+		if (prop === "h") return _opts.hUnit ?? def("y")
+	}
+
+	/**
+	 * @returns {() => string}
+	 */
+	css() {
+		return mem(() =>
 			css(rect(
-				_x() + _unit("x"),
-				_y() + _unit("y"),
-				_w() + _unit("w"),
-				_h() + _unit("h"),
-				_opts()
-			)))
+				this.x() + this.unit("x"),
+				this.y() + this.unit("y"),
+				this.w() + this.unit("w"),
+				this.h() + this.unit("h"),
+				this.opts()
+			)) +
+			(this.opts().material?.css?.() ?? "")
+		)
 	}
-
-	let navigator = Navigator(api)
-	api.navigator = navigator
-
-	eff_on(navigator.destination,
-		() => children.forEach(child =>
-			child.follow(
-				Object.assign(derived(), navigator.destination())
-			)))
-
-	return api
 }
 
 /**
+ * @typedef {{x: number, y: number, w: number, h: number}} Bounding
  * @param {RectangleDOM} element
- * @param {(bounding: {x: number, y: number, w: number, h: number}) => void} followfn 
+ * @param {(bounding: Bounding) => void} followfn 
  * @returns {RectangleDOMChild}  
  * */
 function Child(element, followfn) {
@@ -510,12 +490,11 @@ function Clock() {
 				delta: stamp - i.last(),
 				elapsed: i.elapsed(),
 				last: i.last(),
-				destroy: () => c.splice(index, 1)
+				destroy: () => c.splice(c.findIndex(f => f === e), 1)
 			}))
 		}
 
 		i.last(stamp)
-		console.log("cbs", callbacks.length)
 	}
 
 	requestAnimationFrame(run)
@@ -523,11 +502,6 @@ function Clock() {
 }
 
 let clock = Clock()
-//clock.add((t) => console.log((t.elapsed / 1000).toFixed(2)))
-document.addEventListener("visibilitychange", () => {
-	if (document.hidden) clock.pause()
-	else clock.play()
-});
 
 // ------------------------
 // #Space;
@@ -549,7 +523,6 @@ document.addEventListener("visibilitychange", () => {
 function Space(style_ref) {
 	///**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
 	const space_entities = sig([])
-
 	const add_css = (css) => style_ref.push(css)
 
 	/**
@@ -590,7 +563,7 @@ let space = Space(style)
  *	html: any,
  *	css: any,
  *	rectangle: Rectangle,
- *	follow: (bounding: {x: number, y: number, w: number, h: number}) => void
+ *	follow: (bounding: Bounding) => void
  * }} RectangleDOMChild
  * */
 
@@ -604,7 +577,7 @@ function init_p5(el) {
 
 	let r1 = 200;
 	let r2 = 440;
-	let text1 = "अलगpracticeseeee"
+	let text1 = "अलगpractices"
 	let textc = "#9366C5";
 	let e1font, e2font, e3font
 	p.setup = () => {
@@ -620,7 +593,7 @@ function init_p5(el) {
 
 	let an = 0
 	function draw_character(angle, char) {
-		p.textSize(70);
+		p.textSize(40);
 		p.noStroke();
 		p.textAlign(p.CENTER, p.CENTER);
 
@@ -635,11 +608,11 @@ function init_p5(el) {
 		if (angle > 80) p.textFont(e2font);
 		else p.textFont(e1font)
 
-		p.stroke(colors.white);
+		p.stroke(colors.black);
 		p.noFill()
-		p.circle(x1, y1, 80)
+		p.circle(x1, y1, 60)
 
-		p.fill(colors.white)
+		p.fill(colors.black)
 		p.noStroke()
 		p.text(char, x1, y1);
 	}
@@ -668,6 +641,8 @@ function init_p5(el) {
  *  easing?: string,
  *	onend?: () => void 
  *	onstart?: () => void 
+ *	onupdate?: () => void 
+ *	ondestroy?: (reason: string) => void 
  * }} Keyframe
  *
  * @typedef {{
@@ -706,6 +681,8 @@ function Prop(clock, keyframes, setter) {
 			duration: key.duration,
 			onend: key.onend,
 			onstart: key.onstart,
+			onupdate: key.onupdate,
+			ondestroy: key.ondestroy,
 			easing: key.easing ? key.easing : "linear",
 		})),
 
@@ -714,9 +691,9 @@ function Prop(clock, keyframes, setter) {
 		/**@type {ClockCallback}*/
 		update(time) {
 			let fps = 1000 / time.delta
-
 			if (!_runChecks(time.destroy)) return
 			let motion = api.keyframes[api.activeMotion]
+			if (motion.onupdate) motion.onupdate()
 
 			api.elapsedTime == 0 && motion.onstart
 				? motion.onstart()
@@ -749,14 +726,16 @@ function Prop(clock, keyframes, setter) {
 
 	// Check if animation should continue
 	const _runChecks = (destroy) => {
-		if (should_destroy) destroy()
-		if (!api.active) return false
-
 		const motion = api.keyframes[api.activeMotion]
 
-		if (api.elapsedTime >= motion.duration) {
-			motion.onend ? motion.onend() : null
+		if (api.elapsedTime >= motion.duration && motion.onend) motion.onend()
+		if (should_destroy) {
+			if (motion.ondestroy) motion.ondestroy("asked")
+			destroy()
+		}
+		if (!api.active) return false
 
+		if (api.elapsedTime >= motion.duration) {
 			if (api.activeMotion < api.keyframes.length - 1) {
 				api.activeMotion++
 				api.elapsedTime = 0
@@ -766,6 +745,7 @@ function Prop(clock, keyframes, setter) {
 					api.elapsedTime = 0
 				} else {
 					api.active = false
+					if (motion.ondestroy) motion.ondestroy("over and no loop")
 					destroy()
 					return false
 				}
@@ -899,7 +879,7 @@ const Main = () => hdom([["style", () => css(style)], space.html])
 
 /**@type RectangleDOM*/
 const Banner = (() => {
-	let rectangle = Rectangle(20, 30, 25, 40, { unit: "v" })
+	let rectangle = new Rectangle(20, 30, 25, 40, { unit: "v" })
 
 	let inlinecss = rectangle.css()
 
@@ -917,27 +897,39 @@ const Banner = (() => {
 	return { html, css, rectangle }
 })()
 
-/**@type RectangleDOM*/
-const Information = (() => {
-	let rectangle = Rectangle(
-		40, 1,
-		100 - 40 - 1, 60,
-		{ unit: "v" }
-	)
 
 
-	let style = rectangle.css()
-
-	const html = [".resources", { style: style }]
-	const css = [".resources", {
-		position: "fixed",
-		background: colors.highlight,
-		"background-size": [[px(40), px(40)]],
+let colored_grid = (color, grid_size = 40) => ({
+	css: () => CSS.css({
+		background: color,
+		"background-size": [[px(grid_size), px(grid_size)]],
 		"background-image": [
 			"linear-gradient(to right, #2222 1px, transparent 1px)",
 			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
 		]
-	}]
+	})
+})
+
+/**@type {Material}*/
+let purple_grid = colored_grid(colors.highlight, 40)
+
+/**@type {Material}*/
+let white_grid = colored_grid(colors.white, 4)
+
+/**@type RectangleDOM*/
+const Information = (() => {
+	/**@type {Material}*/
+	let material = purple_grid
+	let rectangle = new Rectangle(
+		40, 1,
+		100 - 40 - 1, 60,
+		{ unit: "v", material }
+	)
+
+	let style = rectangle.css()
+
+	const html = [".resources", { style: style }]
+	const css = [".resources",]
 
 	return { css, html, rectangle }
 })()
@@ -985,7 +977,7 @@ let Schedule = (function() {
 		],
 	]
 
-	let rectangle = Rectangle(1, 45, 30, 60, { unit: "v" })
+	let rectangle = new Rectangle(1, 45, 30, 60, { unit: "v" })
 	let inlincecss = rectangle.css()
 
 	const html =
@@ -1027,18 +1019,12 @@ let Schedule = (function() {
 })()
 
 
-
-
 const Stage = (() => {
 	const html = () => hdom([".canvas", { ref: init_p5 }])
-	const css = [".canvas", { position: "fixed" }, fullscreen]
+	const css = [".canvas", { position: "fixed", "mix-blend-mode": "difference" }, fullscreen]
 	return { html, css }
 })()
 
-space.add(Banner)
-space.add(Information)
-space.add(Stage)
-space.add(Schedule)
 
 // -----------------------
 // Event Listeners
@@ -1049,10 +1035,52 @@ document.body.onmousemove = (e) => {
 }
 // -----------------------
 //
+//
+
+/**@returns {Keyframe[]}*/
+let jump = (initial, then) => {
+	let top = initial - 5
+	return [
+		{ start: initial, end: top, duration: 350, easing: "OutCubic" },
+		{ start: top, end: top - .5, duration: 150, easing: "OutCubic" },
+		{ start: top - .5, end: initial - .5, duration: 150, easing: "InCubic" },
+		{ start: initial - .5, end: initial, duration: 350, easing: "InCubic", onend: then },
+	]
+}
+
+let offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
+
+/** @param {(bounds: Bounding) => ({x: number, y: number})} anchor 
+ * @param {Rectangle} rectangle
+**/
+function follow_fn(rectangle, anchor) {
+	return function(dims) {
+		setTimeout(() => {
+			let pos = anchor(dims)
+
+			let actual = () => rectangle.navigator.navigate_to(
+				pos.x, pos.y, 8, 250)
+			let jumpy = () => {
+				let tl = rectangle.navigator.timeline
+				tl.clear()
+				tl.add(animate.prop(jump(rectangle.y(), actual), rectangle.y))
+			}
+
+			toss() ? jumpy() : actual()
+		}, 700)
+	}
+}
+
+/*
+* @param {(bounds: Bounding) => ({x: number, y: number})} anchor
+**/
+function follow_simple(rectangle) {
+	return function(dims) { rectangle.navigator.navigate_to(dims.x, dims.y, 8, 250) }
+}
 
 /**@type {RectangleDOM}*/
 const First = (() => {
-	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
+	let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: colored_grid(colors.white, 8) })
 	let ref = rectangle.css()
 	let inlinecss = () => ref()
 	let word = sig("Schedule")
@@ -1069,11 +1097,41 @@ const First = (() => {
 
 /**@type {RectangleDOM}*/
 const Second = (() => {
-	let rectangle = Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
+	let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
 	let inlinecss = rectangle.css()
 	let html = () => hdom([".test-box", { style: inlinecss }, ["h2", "Schedule"]])
 	return { html, css, rectangle }
 })()
+
+/**
+ * @param {Rectangle} rect
+ * @returns {RectangleDOM}
+ * */
+const domfromrectangle = (rect) => {
+	let css = ""
+	let ref = rect.css()
+	let off = sig(offset(365))
+
+	setInterval(() => {
+		off(offset(185))
+	}, 2000 + Math.random() * 2000)
+
+	let inlinecss = () => ref() + `;transform: rotate(${off()}deg);transition: transform 200ms`
+	let html = () => hdom(["div", { style: inlinecss }])
+	return { html, css, rectangle: rect }
+}
+
+/**@returns {Material}*/
+let imagematerial = (src) => ({
+	css: () => css({
+		background: "#fff0",
+		"background-image": url(src),
+		"background-size": "contain",
+		"background-repeat": "no-repeat"
+	})
+})
+
+
 
 /**
  * @param {RectangleDOM} first 
@@ -1094,12 +1152,14 @@ const maskcontainer = (first, second) => {
 	}
 
 	const onanimationend = () => {
+		console.log("scheduled")
 		swap()
 		reset()
-		setTimeout(_animate, 150)
+		setTimeout(_animate, 5)
 	}
 
 	const _animate = () => {
+		console.log("ran")
 		let direction = toss() ? -1 : 1
 		let axis = toss() ? "x" : "y"
 
@@ -1109,7 +1169,7 @@ const maskcontainer = (first, second) => {
 
 		animate.prop(
 			[
-				{ start, end: start, duration: 1500 },
+				{ start, end: start, duration: 1500, },
 				{ start, end, duration: 500, onend }
 			],
 			ordered()[1].rectangle[axis]
@@ -1124,7 +1184,7 @@ const maskcontainer = (first, second) => {
 		ordered([s, f])
 	}
 
-	const rectangle = Rectangle(1, 94, 250, 10, { unit: "v", wUnit: "px" })
+	const rectangle = new Rectangle(1, 94, 250, 10, { unit: "v", wUnit: "px" })
 	const cssref = rectangle.css()
 	const inlinecss = mem(() => cssref() + "overflow: hidden;")
 	const render = e => e.html()
@@ -1135,36 +1195,54 @@ const maskcontainer = (first, second) => {
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
-let dom = maskcontainer(First, Second)
+let shape = (src, fn) => {
+	let rectangle = new Rectangle(offset(100), offset(100), Math.random() * 8 + 5, Math.random() * 8 + 5, {
+		unit: "v",
+		material: imagematerial(src)
+	})
 
-/**@returns {Keyframe[]}*/
-let jump = (initial, then) => {
-	let top = initial - 5
-	return [
-		{ start: initial, end: top, duration: 350, easing: "OutCubic" },
-		{ start: top, end: top - .5, duration: 150, easing: "OutCubic" },
-		{ start: top - .5, end: initial - .5, duration: 150, easing: "InCubic" },
-		{ start: initial - .5, end: initial, duration: 350, easing: "InCubic", onend: then },
-	]
+	let domdom = domfromrectangle(rectangle)
+	fn = fn ? fn(rectangle) : follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
+
+	return Child(domdom, fn)
 }
 
-let offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
+let tl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
+let tr = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + offset(2) }))
+let br = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + dims.h + offset(2) }))
+let bl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + dims.h + offset(2) }))
 
-let masked = Child(dom, (dims) => {
-	setTimeout(() => {
-		let actual = () => dom.rectangle.navigator.navigate_to(
-			dims.x + offset(3), dims.y + offset(4) - 2, 8, 250)
-		let jumpy = () => {
-			let tl = dom.rectangle.navigator.timeline
-			tl.clear()
-			tl.add(animate.prop(jump(dom.rectangle.y(), actual), dom.rectangle.y))
-		}
+let randomizer = (rectangle) => {
+	let opts = [tl, tr, br, bl]
+	let active = opts.map(e => e(rectangle))
 
-		toss() ? jumpy() : actual()
-	}, 700)
+	return (dims) => active[Math.floor(Math.random() * active.length)](dims)
+}
+
+let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
+shapes.forEach((e) => {
+	Information.rectangle.add_child(e)
+	space.add(e)
 })
 
+let shapes2 = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
+
+let dom = maskcontainer(First, Second)
+
+let fn2 = follow_simple(dom.rectangle)
+let masked = Child(dom, fn2)
 Schedule.rectangle.add_child(masked)
+
+space.add(Information)
+space.add(Stage)
+space.add(Banner)
+
+shapes2.forEach((e) => {
+	Banner.rectangle.add_child(e)
+	space.add(e)
+})
+
+space.add(Schedule)
 space.add(masked)
 
 // -----------------------
@@ -1230,7 +1308,7 @@ comps.forEach((el) => {
 	el.rectangle.navigator.navigate_to(pos.x, pos.y, 20, 800)
 })
 
-//
+// //
 setInterval(() => {
 	comps.forEach((el) => {
 		let pos = random_pos(
@@ -1238,4 +1316,4 @@ setInterval(() => {
 			el.rectangle.h())
 		el.rectangle.navigator.navigate_to(pos.x, pos.y)
 	})
-}, 5000)
+}, 500)

@@ -604,7 +604,7 @@ function init_p5(el) {
 		p.rectMode(p.CENTER);
 		//rotation for each point
 		let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
-		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 4;
+		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 3;
 
 		if (angle > 80) p.textFont(e2font);
 		else p.textFont(e1font)
@@ -629,8 +629,12 @@ function init_p5(el) {
 			draw_character(angle, char)
 		})
 
-		r1 = 300 + p.cos(90 - an) * 80;
-		r2 = 300 + p.sin(90 - an) * 120;
+
+		let rw = p.width / 4
+		let ry = p.height / 4
+
+		r1 = (rw * .8) + p.cos(90 - an) * (rw * .2);
+		r2 = (ry * .8) + p.sin(90 - an) * (ry * .2);
 	}
 }
 
@@ -1309,12 +1313,31 @@ comps.forEach((el) => {
 	el.rectangle.navigator.navigate_to(pos.x, pos.y, 20, 800)
 })
 
+let offscreen = () => {
+	// either outside positive
+	let xr = Math.random() * 100
+	let yr = Math.random() * 100
+
+	let fx = (100 + xr) * (toss() ? 1 : -1)
+	let fy = (100 + yr) * (toss() ? 1 : -1)
+
+	return { x: fx, y: fy }
+}
+
+let out = false
+
 // //
 setInterval(() => {
+	out = !out
 	comps.forEach((el) => {
-		let pos = random_pos(
-			el.rectangle.w(),
-			el.rectangle.h())
+		let pos
+		if (out) {
+			pos = offscreen()
+		} else {
+			pos = random_pos(
+				el.rectangle.w(),
+				el.rectangle.h())
+		}
 		el.rectangle.navigator.navigate_to(pos.x, pos.y)
 	})
-}, 5000)
+}, 15000)

@@ -92,6 +92,29 @@ const random_pos = (w = 10, h = 10) => ({
 	y: ((100 - h) * Math.random()),
 })
 
+const offscreen = () => {
+	// either outside positive
+	let xr = Math.random() * 100
+	let yr = Math.random() * 100
+
+	let dx = (toss() ? 1 : -1)
+	let dy = (toss() ? 1 : -1)
+
+	let fx = dx > 0 ? (100 + xr) : xr * dx
+	let fy = dy > 0 ? (100 + yr) : yr * dy
+
+	return { x: fx, y: fy }
+}
+
+let call_everyone = () => {
+	comps.forEach((el) => {
+		let pos = random_pos(
+			el.rectangle.w(),
+			el.rectangle.h())
+		el.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
+	})
+}
+
 
 /**
  * @param {string} x 
@@ -539,6 +562,7 @@ function Space(style_ref) {
 
 	const space_dom = mem(() =>
 		hdom([".main",
+			{ onclick: call_everyone },
 			...space_entities().map(e => e.html)
 		])
 	)
@@ -576,13 +600,13 @@ let space = Space(style)
 function init_p5(el) {
 	let p = new Q5('instance', el);
 
-	let r1 = 200;
-	let r2 = 440;
+	let r1 = p.width / 4;
+	let r2 = p.height / 4;
 	let text1 = "अलगpractices"
 	let textc = "#9366C5";
 	let e1font, e2font, e3font
 	p.setup = () => {
-		p.createCanvas(window.innerWidth, window.innerWidth, { alpha: true });
+		p.createCanvas(window.innerWidth, window.innerHeight, { alpha: true });
 		p.angleMode(p.DEGREES);
 	};
 
@@ -604,7 +628,7 @@ function init_p5(el) {
 		p.rectMode(p.CENTER);
 		//rotation for each point
 		let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
-		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 3;
+		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 2;
 
 		if (angle > 80) p.textFont(e2font);
 		else p.textFont(e1font)
@@ -630,11 +654,11 @@ function init_p5(el) {
 		})
 
 
-		let rw = p.width / 4
-		let ry = p.height / 4
+		let rw = p.width / 4 - p.width / 12
+		let ry = p.height / 4 - p.height / 12
 
-		r1 = (rw * .8) + p.cos(90 - an) * (rw * .2);
-		r2 = (ry * .8) + p.sin(90 - an) * (ry * .2);
+		r1 = rw + p.cos(90 - an) * p.width / 10;
+		r2 = ry + p.sin(90 - an) * p.height / 10;
 	}
 }
 
@@ -884,7 +908,8 @@ const Main = () => hdom([["style", () => css(style)], space.html])
 
 /**@type RectangleDOM*/
 const Banner = (() => {
-	let rectangle = new Rectangle(20, 30, 25, 40, { unit: "v" })
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(x, y, 25, 40, { unit: "v" })
 
 	let inlinecss = rectangle.css()
 
@@ -925,8 +950,9 @@ let white_grid = colored_grid(colors.white, 4)
 const Information = (() => {
 	/**@type {Material}*/
 	let material = purple_grid
+	let { x, y } = offscreen()
 	let rectangle = new Rectangle(
-		40, 1,
+		x, y,
 		100 - 40 - 1, 60,
 		{ unit: "v", material }
 	)
@@ -982,7 +1008,8 @@ let Schedule = (function() {
 		],
 	]
 
-	let rectangle = new Rectangle(1, 45, 30, 60, { unit: "v" })
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(x, y, 30, 60, { unit: "v" })
 	let inlincecss = rectangle.css()
 
 	const html =
@@ -1053,6 +1080,12 @@ let jump = (initial, then) => {
 	]
 }
 
+let pause = (initial, then) => {
+	return [
+		{ start: initial, end: initial + 1, duration: 800, easing: "OutCubic", onend: then },
+	]
+}
+
 let offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
 
 /** @param {(bounds: Bounding) => ({x: number, y: number})} anchor 
@@ -1062,9 +1095,14 @@ function follow_fn(rectangle, anchor) {
 	return function(dims) {
 		setTimeout(() => {
 			let pos = anchor(dims)
+			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
 
-			let actual = () => rectangle.navigator.navigate_to(
-				pos.x, pos.y, 8, 250)
+			let pausy = () => {
+				let tl = rectangle.navigator.timeline
+				tl.clear()
+				tl.add(animate.prop(pause(rectangle.y(), actual), rectangle.y))
+			}
+
 			let jumpy = () => {
 				let tl = rectangle.navigator.timeline
 				tl.clear()
@@ -1111,6 +1149,10 @@ const Second = (() => {
 /**
  * @param {Rectangle} rect
  * @returns {RectangleDOM}
+ *
+ * // x-------------------x
+ * // Dom from Rectangle
+ * // x-------------------x
  * */
 const domfromrectangle = (rect) => {
 	let css = ""
@@ -1138,12 +1180,19 @@ let imagematerial = (src) => ({
 
 
 
+// x-------------------x
+// Mask container
+// x-------------------x
+// TODO: Mask options
+// TODO: more than one?
+// x-------------------x
 /**
  * @param {RectangleDOM} first 
  * @param {RectangleDOM} second 
+ * @param {Rectangle} rectangle 
  * @returns {RectangleDOM}
  * */
-const maskcontainer = (first, second) => {
+const maskcontainer = (first, second, rectangle) => {
 	const runreset = (el) => {
 		el.rectangle.x(0)
 		el.rectangle.y(0)
@@ -1189,7 +1238,8 @@ const maskcontainer = (first, second) => {
 		ordered([s, f])
 	}
 
-	const rectangle = new Rectangle(1, 94, 250, 10, { unit: "v", wUnit: "px" })
+	const { x, y } = offscreen()
+	rectangle = rectangle ? rectangle : new Rectangle(x, y, 250, 10, { unit: "v", wUnit: "px" })
 	const cssref = rectangle.css()
 	const inlinecss = mem(() => cssref() + "overflow: hidden;")
 	const render = e => e.html()
@@ -1200,8 +1250,35 @@ const maskcontainer = (first, second) => {
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
-let shape = (src, fn) => {
-	let rectangle = new Rectangle(offset(100), offset(100), Math.random() * 8 + 5, Math.random() * 8 + 5, {
+function fucker() {
+	let Alternative = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: colored_grid("white") })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", "Alternative"]])
+		return { html, css, rectangle }
+	})()
+
+	let Practices = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: colored_grid("white") })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", "Practices"]])
+		return { html, css, rectangle }
+	})()
+
+	let rectangle = new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
+	let dom = maskcontainer(Alternative, Practices, rectangle)
+	let masked = Child(dom, follow_simple(dom.rectangle))
+	//Schedule.rectangle.add_child(masked)
+	space.add(masked)
+}
+//fucker( )
+
+// x-------------------x
+// Shape creator
+// x-------------------x
+const shape = (src, fn) => {
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(x, y, Math.random() * 8 + 5, Math.random() * 8 + 5, {
 		unit: "v",
 		material: imagematerial(src)
 	})
@@ -1212,6 +1289,9 @@ let shape = (src, fn) => {
 	return Child(domdom, fn)
 }
 
+// x-------------------x
+// Follow fns
+// x-------------------x
 let tl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
 let tr = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + offset(2) }))
 let br = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + dims.h + offset(2) }))
@@ -1224,31 +1304,38 @@ let randomizer = (rectangle) => {
 	return (dims) => active[Math.floor(Math.random() * active.length)](dims)
 }
 
-let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
-shapes.forEach((e) => {
-	Information.rectangle.add_child(e)
-	space.add(e)
-})
+function layer_one_shapes() {
+	let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
+	shapes.forEach((e) => {
+		Information.rectangle.add_child(e)
+		space.add(e)
+	})
+}
+layer_one_shapes()
 
-let shapes2 = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
-
-let dom = maskcontainer(First, Second)
-
-let fn2 = follow_simple(dom.rectangle)
-let masked = Child(dom, fn2)
-Schedule.rectangle.add_child(masked)
 
 space.add(Information)
 space.add(Stage)
 space.add(Banner)
 
-shapes2.forEach((e) => {
-	Banner.rectangle.add_child(e)
-	space.add(e)
-})
+function layer_two_shapes() {
+	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
+	shapes.forEach((e) => {
+		Banner.rectangle.add_child(e)
+		space.add(e)
+	})
+}
+layer_two_shapes()
 
 space.add(Schedule)
-space.add(masked)
+
+function mount_schedule_banner() {
+	let dom = maskcontainer(First, Second)
+	let masked = Child(dom, follow_simple(dom.rectangle))
+	Schedule.rectangle.add_child(masked)
+	space.add(masked)
+}
+mount_schedule_banner()
 
 // -----------------------
 // (u) COMPONENT: Button
@@ -1306,38 +1393,18 @@ render(Main, document.body)
 /**@type {RectangleDOM[]}*/
 let comps = [Schedule, Information, Banner]
 
-comps.forEach((el) => {
-	let pos = random_pos(
-		el.rectangle.w(),
-		el.rectangle.h())
-	el.rectangle.navigator.navigate_to(pos.x, pos.y, 20, 800)
-})
-
-let offscreen = () => {
-	// either outside positive
-	let xr = Math.random() * 100
-	let yr = Math.random() * 100
-
-	let fx = (100 + xr) * (toss() ? 1 : -1)
-	let fy = (100 + yr) * (toss() ? 1 : -1)
-
-	return { x: fx, y: fy }
-}
-
-let out = false
-
 // //
-setInterval(() => {
-	out = !out
-	comps.forEach((el) => {
-		let pos
-		if (out) {
-			pos = offscreen()
-		} else {
-			pos = random_pos(
-				el.rectangle.w(),
-				el.rectangle.h())
-		}
-		el.rectangle.navigator.navigate_to(pos.x, pos.y)
-	})
-}, 15000)
+// setInterval(() => {
+// 	out = !out
+// 	comps.forEach((el) => {
+// 		let pos
+// 		if (out) {
+// 			pos = offscreen()
+// 		} else {
+// 			pos = random_pos(
+// 				el.rectangle.w(),
+// 				el.rectangle.h())
+// 		}
+// 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 25, 350)
+// 	})
+// }, 15000)

@@ -1,5 +1,6 @@
 import { mounted, render, mut, sig, mem, eff_on, each, if_then } from "./chowk/monke.js"
 import { hdom } from "./chowk/hdom/index.js"
+import { Easings } from "./easings.js"
 import { Q5 } from "./q5/q5.js"
 // import * as pixijs from 'https://esm.sh/pixi.js'
 import CSS from "./css/css.js"
@@ -72,7 +73,7 @@ const colors = mut({
 })
 
 const type = mut({
-	heading: "anthony"
+	heading: "cirrus"
 })
 
 
@@ -91,6 +92,20 @@ const random_pos = (w = 10, h = 10) => ({
 	x: ((100 - w) * Math.random()),
 	y: ((100 - h) * Math.random()),
 })
+
+const offscreen = () => {
+	// either outside positive
+	let xr = Math.random() * 100
+	let yr = Math.random() * 100
+
+	let dx = (toss() ? 1 : -1)
+	let dy = (toss() ? 1 : -1)
+
+	let fx = dx > 0 ? (100 + xr) : xr * dx
+	let fy = dy > 0 ? (100 + yr) : yr * dy
+
+	return { x: fx, y: fy }
+}
 
 
 /**
@@ -882,27 +897,6 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 // -----------------------
 const Main = () => hdom([["style", () => css(style)], space.html])
 
-/**@type RectangleDOM*/
-const Alternative = (() => {
-	let rectangle = new Rectangle(20, 30, 25, 40, { unit: "v" })
-
-	let inlinecss = rectangle.css()
-
-	let css = [".ornament", {
-		background: colors.highlight,
-		"background-size": [[px(40), px(40)]],
-		"background-image": [
-			"linear-gradient(to right, #2222 1px, transparent 1px)",
-			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
-		]
-	}]
-
-	let html = [".ornament", { style: inlinecss }]
-
-	return { html, css, rectangle }
-})()
-
-
 
 let colored_grid = (color, grid_size = 40) => ({
 	css: () => CSS.css({
@@ -922,13 +916,31 @@ let purple_grid = colored_grid(colors.highlight, 40)
 let white_grid = colored_grid(colors.white, 4)
 
 /**@type RectangleDOM*/
+const Alternative = (() => {
+	let rectangle = new Rectangle(20, 30, 40, 20, { unit: "v", material: purple_grid })
+
+	let inlinecss = rectangle.css()
+
+	let css = [".ornament", {
+		background: colors.highlight,
+		"background-size": [[px(40), px(40)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
+	}]
+
+	let html = [".ornament", { style: inlinecss }]
+
+	return { html, css, rectangle }
+})()
+
+
+/**@type RectangleDOM*/
 const Symposium = (() => {
 	/**@type {Material}*/
 	let material = purple_grid
-	let rectangle = new Rectangle(
-		40, 1,
-		100 - 40 - 1, 60,
-		{ unit: "v", material }
+	let rectangle = new Rectangle(40, 1, 40, 20, { unit: "v", material }
 	)
 
 	let style = rectangle.css()
@@ -953,73 +965,12 @@ let Timing = (function() {
 		},
 
 		["h2", { "padding": rem(1) }],
-
-		[".schedule-container", {
-			"height": percent(100),
-			"overflow-y": "scroll"
-		}],
-
-		[".section", {
-			margin: [[0, rem(1.25)]],
-			padding: rem(.25),
-			"padding-bottom": rem(1.25),
-			"border-top": [[px(1), "solid", colors.highlight]],
-			color: colors.highlight,
-		},
-			[":hover", {
-				color: colors.white,
-				"background-color": colors.highlight
-			}],
-
-			[".title", { "font-family": "ductus" }],
-			[".time", {
-				display: "block-inline",
-				padding: [[0, em(.5)]],
-				"width": "min-content",
-				"background-color": colors.highlight, color: colors.white,
-				"border-radius": px(15)
-			}]
-		],
 	]
 
-	let rectangle = new Rectangle(1, 45, 30, 60, { unit: "v" })
+	let rectangle = new Rectangle(1, 45, 60, 20, { unit: "v" })
 	let inlincecss = rectangle.css()
 
-	const html =
-		[".schedule", { style: inlincecss },
-			["h2", ""],
-			[".schedule-container",
-				[".section",
-					[".title", "Eric Francisco"],
-					[".time", "2pm"]
-				],
-				[".section",
-					[".title", "Scott Deeming"],
-					[".time", "3pm"]
-				],
-				[".section",
-					[".title", "Garry Ing"],
-					[".time", "3pm"]
-				],
-				[".section",
-					[".title", "1RG"],
-					[".time", "4pm"]
-				],
-				[".section",
-					[".title", "E.L Guerero"],
-					[".time", "4pm"]
-				],
-				[".section",
-					[".title", "Symon Oliver"],
-					[".time", "4pm"]
-				],
-				[".section",
-					[".title", "SHEEP School"],
-					[".time", "2pm"]
-				],
-
-			]
-		]
+	const html = [".schedule", { style: inlincecss }, ["h2", ""]]
 	return { html, css, rectangle }
 })()
 
@@ -1031,16 +982,6 @@ const Stage = (() => {
 })()
 
 
-// -----------------------
-// Event Listeners
-// -----------------------
-document.body.onmousemove = (e) => {
-	mouse_x(e.clientX)
-	mouse_y(e.clientY)
-}
-// -----------------------
-//
-//
 
 /**@returns {Keyframe[]}*/
 let jump = (initial, then) => {
@@ -1143,7 +1084,7 @@ let imagematerial = (src) => ({
  * @param {RectangleDOM} second 
  * @returns {RectangleDOM}
  * */
-const maskcontainer = (first, second) => {
+const maskcontainer = (first, second, rectangle = new Rectangle(1, 94, 250, 10, { unit: "v", wUnit: "px" })) => {
 	const runreset = (el) => {
 		el.rectangle.x(0)
 		el.rectangle.y(0)
@@ -1189,7 +1130,6 @@ const maskcontainer = (first, second) => {
 		ordered([s, f])
 	}
 
-	const rectangle = new Rectangle(1, 94, 250, 10, { unit: "v", wUnit: "px" })
 	const cssref = rectangle.css()
 	const inlinecss = mem(() => cssref() + "overflow: hidden;")
 	const render = e => e.html()
@@ -1200,8 +1140,48 @@ const maskcontainer = (first, second) => {
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
-let shape = (src, fn) => {
-	let rectangle = new Rectangle(offset(100), offset(100), Math.random() * 8 + 5, Math.random() * 8 + 5, {
+/**
+ * @param {string} letter 
+ * @param {Rectangle=} rectangle 
+ * @param {[Material, Material]=} materials 
+ * */
+function Dual(letter, rectangle, materials) {
+	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
+	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
+	let Alternative = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", letter]])
+		return { html, css, rectangle }
+	})()
+
+	let Practices = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[1] })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", letter]])
+		return { html, css, rectangle }
+	})()
+
+	let dom = maskcontainer(Alternative, Practices, rectangle)
+	return dom
+}
+
+["Alt", "ern", "at", "ive"].forEach((char, i) => {
+	let rect = new Rectangle(20 + i * 12, 20, 12, 10, { unit: "v" })
+	space.add(Dual(char, rect))
+})
+
+// "Alternative".split("").map((char, i) => {
+// 	let rect = new Rectangle(20 + i * 4, 20, 8, 10, { unit: "v" })
+// 	space.add(Dual(char, rect))
+// })
+
+// x-------------------x
+// Shape creator
+// x-------------------x
+const shape = (src, fn) => {
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(x, y, Math.random() * 8 + 5, Math.random() * 8 + 5, {
 		unit: "v",
 		material: imagematerial(src)
 	})
@@ -1212,6 +1192,9 @@ let shape = (src, fn) => {
 	return Child(domdom, fn)
 }
 
+// x-------------------x
+// Follow fns
+// x-------------------x
 let tl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
 let tr = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + offset(2) }))
 let br = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + dims.h + offset(2) }))
@@ -1224,120 +1207,55 @@ let randomizer = (rectangle) => {
 	return (dims) => active[Math.floor(Math.random() * active.length)](dims)
 }
 
-let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
-shapes.forEach((e) => {
-	Symposium.rectangle.add_child(e)
-	space.add(e)
-})
 
-let shapes2 = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
+function layer_one_shapes() {
+	let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
+	shapes.forEach((e) => {
+		Symposium.rectangle.add_child(e)
+		space.add(e)
+	})
+}
+layer_one_shapes()
 
-let dom = maskcontainer(First, Second)
-
-let fn2 = follow_simple(dom.rectangle)
-let masked = Child(dom, fn2)
-Timing.rectangle.add_child(masked)
 
 space.add(Symposium)
 space.add(Stage)
 space.add(Alternative)
 
-shapes2.forEach((e) => {
-	Alternative.rectangle.add_child(e)
-	space.add(e)
-})
+function layer_two_shapes() {
+	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
+	shapes.forEach((e) => {
+		Alternative.rectangle.add_child(e)
+		space.add(e)
+	})
+}
+layer_two_shapes()
 
 space.add(Timing)
-space.add(masked)
 
-// -----------------------
-// (u) COMPONENT: Button
-// -----------------------
-let button = (click_fn, one, two) => {
-	let atts = { onclick: click_fn }
-	let text = two
-
-	if (typeof one == "object") Object.assign(atts, one)
-	else if (typeof one == "string") text = one
-
-	return ["button", atts, text]
+function mount_schedule_banner() {
+	let dom = maskcontainer(First, Second)
+	let masked = Child(dom, follow_simple(dom.rectangle))
+	Timing.rectangle.add_child(masked)
+	space.add(masked)
 }
+mount_schedule_banner()
 
 // -----------------------
-// (u) COMPONENT: label number input
+// Event Listeners
 // -----------------------
-function label_number_input(label, getter, setter) {
-	return [
-		".label-input",
-		["span.label", label],
-		() => hdom(["input", {
-			value: getter,
-			type: "number",
-			oninput: (e) => {
-				let value = parseInt(e.target.value)
-				if (isNaN(value)) value = 0
-				setter(value)
-			}
-		}])
-	]
+document.body.onmousemove = (e) => {
+	mouse_x(e.clientX)
+	mouse_y(e.clientY)
 }
+// -----------------------
+//
 
-const Easings = {
-	linear: (t) => t,
-	InQuad: (t) => t * t,
-	OutQuad: (t) => t * (2 - t),
-	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
-	InCubic: (t) => t * t * t,
-	OutCubic: (t) => --t * t * t + 1,
-	InOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
-	InQuart: (t) => t * t * t * t,
-	OutQuart: (t) => 1 - --t * t * t * t,
-	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
-	InQuint: (t) => t * t * t * t * t,
-	OutQuint: (t) => 1 + --t * t * t * t * t,
-	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
-};
-
-render(Main, document.body)
-
-//----------------------------
-// TEMP
-//----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Timing, Symposium, Alternative]
-
-comps.forEach((el) => {
-	let pos = random_pos(
-		el.rectangle.w(),
-		el.rectangle.h())
-	el.rectangle.navigator.navigate_to(pos.x, pos.y, 20, 800)
+let comps = [Alternative, Symposium, Timing]
+comps.forEach((e) => {
+	let pos = random_pos()
+	e.rectangle.navigator.navigate_to(pos.x, pos.y, 25, 350)
 })
 
-let offscreen = () => {
-	// either outside positive
-	let xr = Math.random() * 100
-	let yr = Math.random() * 100
-
-	let fx = (100 + xr) * (toss() ? 1 : -1)
-	let fy = (100 + yr) * (toss() ? 1 : -1)
-
-	return { x: fx, y: fy }
-}
-
-let out = false
-
-// //
-setInterval(() => {
-	out = !out
-	comps.forEach((el) => {
-		let pos
-		if (out) {
-			pos = offscreen()
-		} else {
-			pos = random_pos(
-				el.rectangle.w(),
-				el.rectangle.h())
-		}
-		el.rectangle.navigator.navigate_to(pos.x, pos.y)
-	})
-}, 15000)
+render(Main, document.body) 

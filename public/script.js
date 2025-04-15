@@ -77,6 +77,15 @@ const type = mut({
 })
 
 
+function move() {
+	comps.forEach((e) => {
+		let pos = random_pos(e.rectangle.w(), e.rectangle.h())
+		e.rectangle.navigator.navigate_to(pos.x, pos.y, 25, 350)
+	})
+	let pos = random_range([0, 30], [40, 70])
+	Timing.rectangle.navigator.navigate_to(pos.x, pos.y)
+}
+
 // --------------------------
 // CSS UTILITIES
 // --------------------------
@@ -91,6 +100,12 @@ const fullscreen = {
 const random_pos = (w = 10, h = 10) => ({
 	x: ((100 - w) * Math.random()),
 	y: ((100 - h) * Math.random()),
+})
+
+let random = (min, max) => Math.random() * (max - min) + min;
+let random_range = (x = [0, 100], y = [0, 100]) => ({
+	x: random(x[0], x[1]),
+	y: random(y[0], y[1])
 })
 
 const offscreen = () => {
@@ -153,6 +168,7 @@ let style = mut([
 		padding: 0,
 		margin: 0,
 		transition: [["all", ms(20)]],
+		cursor: "crosshair",
 	}],
 
 	// -----------------
@@ -554,6 +570,7 @@ function Space(style_ref) {
 
 	const space_dom = mem(() =>
 		hdom([".main",
+			{ onclick: move },
 			...space_entities().map(e => e.html)
 		])
 	)
@@ -593,7 +610,10 @@ function init_p5(el) {
 
 	let r1 = 200;
 	let r2 = 440;
-	let text1 = "अलगpractices"
+	let farsi = "دیگر"
+	let hindi = "अलग"
+	let english = "alt"
+	let text1 = english + "practices"
 	let textc = "#9366C5";
 	let e1font, e2font, e3font
 	p.setup = () => {
@@ -897,14 +917,13 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 // -----------------------
 const Main = () => hdom([["style", () => css(style)], space.html])
 
-
-let colored_grid = (color, grid_size = 40) => ({
+let colored_grid = (color, grid_size = 40, linecolor = "#2222") => ({
 	css: () => CSS.css({
 		background: color,
 		"background-size": [[px(grid_size), px(grid_size)]],
 		"background-image": [
-			"linear-gradient(to right, #2222 1px, transparent 1px)",
-			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+			`linear-gradient(to right, ${linecolor} 1px, transparent 1px)`,
+			`linear-gradient(to bottom, ${linecolor} 1px, transparent 1px)`,
 		]
 	})
 })
@@ -951,6 +970,23 @@ const Symposium = (() => {
 	return { css, html, rectangle }
 })()
 
+/** 
+ * @param {Material[]} materials
+ * @returns {Material}
+ */
+let compose = (...materials) => {
+	let fns = []
+	materials.forEach(m => fns.push(m.css))
+	return { css: () => fns.reduce((acc, fn) => acc += fn(), "") }
+}
+
+/**@returns {Material}*/
+let emptycolor = (color = colors.white) => ({
+	css: () => CSS.css({
+		"background-color": color,
+	})
+})
+
 /**@type RectangleDOM*/
 let Timing = (function() {
 	let css = [
@@ -960,17 +996,61 @@ let Timing = (function() {
 			color: () => colors.text,
 			//transition: [["all", ms(200)]],
 			cursor: "crosshair",
-			display: "grid",
-			"grid-template-rows": [[percent(15), percent(85)]]
+			border: ".5px dotted " + colors.highlight,
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
+			padding: em(1)
 		},
 
-		["h2", { "padding": rem(1) }],
+		["h2.address", {
+			"font-family": "Helvetica",
+			"font-weight": 300,
+			"line-height": em(1.4),
+			"background-color": colors.white,
+			"color": colors.black,
+			//border: [[px(.5), "solid", "black"]],
+			// "background-color": colors.text,
+			"padding": [[0, px(5)]],
+
+			"font-size": em(1.7),
+			width: em(10),
+		}],
+		[".time", {
+			"margin-top": px(10)
+		}],
+
+		["h2.date", {
+			"font-family": "Helvetica",
+			"font-weight": 600,
+			"line-height": em(1.4),
+			"background-color": colors.white,
+			"color": colors.black,
+			//border: [[px(.5), "solid", "black"]],
+			// "background-color": colors.text,
+			"padding": [[0, px(5)]],
+
+			"font-size": em(1.7),
+			"margin-top": em(.5),
+			"margin-left": em(1),
+			width: "min-width",
+		}],
 	]
 
-	let rectangle = new Rectangle(1, 45, 60, 20, { unit: "v" })
+	let rectangle = new Rectangle(1, 45, 50, 23, {
+		unit: "v",
+		material: compose(
+			colored_grid(colors.text + "22", 2),
+			emptycolor("white")
+		)
+	})
 	let inlincecss = rectangle.css()
 
-	const html = [".schedule", { style: inlincecss }, ["h2", ""]]
+	const html = [".schedule", { style: inlincecss },
+		["h2.address", "113 McCaul"],
+		["h2.address", "(Annex Building)"],
+		["h2.address", "MCC 512"],
+		["h4.time", "4:30pm - 9:30pm"],
+		["h2.date", "22 APRIL"],
+	]
 	return { html, css, rectangle }
 })()
 
@@ -1140,25 +1220,27 @@ const maskcontainer = (first, second, rectangle = new Rectangle(1, 94, 250, 10, 
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
+
 /**
  * @param {string} letter 
  * @param {Rectangle=} rectangle 
  * @param {[Material, Material]=} materials 
  * */
-function Dual(letter, rectangle, materials) {
+function Dual(letter, rectangle, materials, font = "cirrus") {
 	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
 	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
+	let fo = { style: "font-family: " + font }
 	let Alternative = (() => {
 		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
 		let inlinecss = rectangle.css()
-		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", letter]])
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
 		return { html, css, rectangle }
 	})()
 
 	let Practices = (() => {
 		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[1] })
 		let inlinecss = rectangle.css()
-		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", letter]])
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
 		return { html, css, rectangle }
 	})()
 
@@ -1166,10 +1248,46 @@ function Dual(letter, rectangle, materials) {
 	return dom
 }
 
-["Alt", "ern", "at", "ive"].forEach((char, i) => {
-	let rect = new Rectangle(20 + i * 12, 20, 12, 10, { unit: "v" })
-	space.add(Dual(char, rect))
-})
+
+/**@returns {Material}*/
+let typography = (color, font = "anthony") => {
+	return {
+		css: () => CSS.css({
+			"font-family": font,
+			"color": color,
+		})
+	}
+}
+
+/**@returns {Material}*/
+let curves = (radius = 50) => {
+	return {
+		css: () => CSS.css({
+			"border-radius": px(radius),
+		})
+	}
+}
+
+
+let alternate_position = { x: 20, y: 20 }
+let practices_position = { x: 8.5, y: 27 }
+let symposium_position = { x: 18.5, y: 34 }
+
+
+
+let materials = [
+	compose(
+		emptycolor(),
+		typography(colors.text),
+	),
+
+	compose(
+		colored_grid(colors.white, 10),
+		typography(colors.text),
+	),
+]
+
+
 
 // "Alternative".split("").map((char, i) => {
 // 	let rect = new Rectangle(20 + i * 4, 20, 8, 10, { unit: "v" })
@@ -1209,7 +1327,7 @@ let randomizer = (rectangle) => {
 
 
 function layer_one_shapes() {
-	let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
+	let shapes = Array(8).fill(0).map((e, i) => shape("./shapes/shape_" + ((i + 1) % 5) + ".png", randomizer))
 	shapes.forEach((e) => {
 		Symposium.rectangle.add_child(e)
 		space.add(e)
@@ -1221,6 +1339,67 @@ layer_one_shapes()
 space.add(Symposium)
 space.add(Stage)
 space.add(Alternative)
+
+let a = ["Alt", "ern", "ate", "ive"]
+let mopts = [
+	compose(
+		emptycolor(colors.base),
+		typography("black", "cirrus"),
+	),
+]
+
+let alts = a.map((char, i) => {
+	let lexlen = 12
+	let randomarr = (arr) => arr[Math.floor(Math.random() * arr.length)]
+	/**@type {[Material, Material]}*/
+	let randos = [randomarr(mopts), randomarr(mopts)]
+	let rect = new Rectangle(alternate_position.x + i * lexlen, alternate_position.y, lexlen, 10, { unit: "v" })
+	return Dual(char, rect, randos)
+})
+
+
+let child_alts = alts.map((item, i) => {
+	let lexlen = 12
+	let fn = follow_fn(item.rectangle, (dims) => ({
+		x: dims.x + offset(3) + i * lexlen,
+		y: dims.y
+	}))
+	return Child(item, fn)
+})
+
+//child_alts.forEach((e) => Alternative.rectangle.add_child(e))
+child_alts.forEach(space.add)
+
+let p = ["Prac", "tices"]
+p.forEach((char, i) => {
+	let lexlen = 18
+
+	let randomarr = (arr) => arr[Math.floor(Math.random() * arr.length)]
+	/**@type {[Material, Material]}*/
+	let randos = [randomarr(materials), randomarr(materials)]
+
+	let rect = new Rectangle(practices_position.x + i * lexlen, practices_position.y, lexlen, 10, { unit: "v" })
+	space.add(Dual(char, rect, randos))
+})
+
+let sym = ["Symp", "osium"]
+sym.forEach((char, i) => {
+	let lexlen = 20
+
+	let randomarr = (arr) => arr[Math.floor(Math.random() * arr.length)]
+	/**@type {[Material, Material]}*/
+	let randos = [
+		compose(
+			emptycolor(colors.white),
+		),
+		compose(
+			emptycolor(colors.white),
+		)
+	]
+
+	let rect = new Rectangle(symposium_position.x + i * lexlen, symposium_position.y, lexlen, 10, { unit: "v" })
+	space.add(Dual(char, rect, randos, "anthony"))
+})
 
 function layer_two_shapes() {
 	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
@@ -1239,7 +1418,7 @@ function mount_schedule_banner() {
 	Timing.rectangle.add_child(masked)
 	space.add(masked)
 }
-mount_schedule_banner()
+//mount_schedule_banner()
 
 // -----------------------
 // Event Listeners
@@ -1252,10 +1431,8 @@ document.body.onmousemove = (e) => {
 //
 
 /**@type {RectangleDOM[]}*/
-let comps = [Alternative, Symposium, Timing]
-comps.forEach((e) => {
-	let pos = random_pos()
-	e.rectangle.navigator.navigate_to(pos.x, pos.y, 25, 350)
-})
+let comps = [Alternative, Symposium]
+
+move()
 
 render(Main, document.body) 

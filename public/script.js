@@ -1037,10 +1037,11 @@ let Timing = (function() {
 
 	let rectangle = new Rectangle(1, 45, 50, 23, {
 		unit: "v",
-		material: compose(
-			colored_grid(colors.text + "22", 2),
-			emptycolor("white")
-		)
+		material: colored_grid(colors.white)
+		// compose(
+		// 	colored_grid(colors.text + "22", 2),
+		// 	emptycolor("white")
+		// )
 	})
 	let inlincecss = rectangle.css()
 

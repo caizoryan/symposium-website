@@ -883,7 +883,7 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 const Main = () => hdom([["style", () => css(style)], space.html])
 
 /**@type RectangleDOM*/
-const Banner = (() => {
+const Alternative = (() => {
 	let rectangle = new Rectangle(20, 30, 25, 40, { unit: "v" })
 
 	let inlinecss = rectangle.css()
@@ -922,7 +922,7 @@ let purple_grid = colored_grid(colors.highlight, 40)
 let white_grid = colored_grid(colors.white, 4)
 
 /**@type RectangleDOM*/
-const Information = (() => {
+const Symposium = (() => {
 	/**@type {Material}*/
 	let material = purple_grid
 	let rectangle = new Rectangle(
@@ -940,7 +940,7 @@ const Information = (() => {
 })()
 
 /**@type RectangleDOM*/
-let Schedule = (function() {
+let Timing = (function() {
 	let css = [
 		".schedule", {
 			"font-family": "monospace",
@@ -1226,7 +1226,7 @@ let randomizer = (rectangle) => {
 
 let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
 shapes.forEach((e) => {
-	Information.rectangle.add_child(e)
+	Symposium.rectangle.add_child(e)
 	space.add(e)
 })
 
@@ -1236,18 +1236,18 @@ let dom = maskcontainer(First, Second)
 
 let fn2 = follow_simple(dom.rectangle)
 let masked = Child(dom, fn2)
-Schedule.rectangle.add_child(masked)
+Timing.rectangle.add_child(masked)
 
-space.add(Information)
+space.add(Symposium)
 space.add(Stage)
-space.add(Banner)
+space.add(Alternative)
 
 shapes2.forEach((e) => {
-	Banner.rectangle.add_child(e)
+	Alternative.rectangle.add_child(e)
 	space.add(e)
 })
 
-space.add(Schedule)
+space.add(Timing)
 space.add(masked)
 
 // -----------------------
@@ -1304,7 +1304,7 @@ render(Main, document.body)
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Schedule, Information, Banner]
+let comps = [Timing, Symposium, Alternative]
 
 comps.forEach((el) => {
 	let pos = random_pos(

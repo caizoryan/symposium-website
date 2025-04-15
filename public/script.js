@@ -1384,7 +1384,7 @@ p.forEach((char, i) => {
 	space.add(Dual(char, rect, randos))
 })
 
-let sym = ["Symp", "osium"]
+let sym = ["SYMP", "OSIUM"]
 sym.forEach((char, i) => {
 	let lexlen = 20
 

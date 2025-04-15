@@ -158,6 +158,7 @@ const loadfont = (src, name) => {
 // *Header: CSS Definition
 // ------------------
 let style = mut([
+	loadfont("./fonts/Roberte-Regular.woff", "roberte"),
 	loadfont("./fonts/Anthony.otf", "anthony"),
 	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
 	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
@@ -1399,7 +1400,7 @@ sym.forEach((char, i) => {
 	]
 
 	let rect = new Rectangle(symposium_position.x + i * lexlen, symposium_position.y, lexlen, 10, { unit: "v" })
-	space.add(Dual(char, rect, randos, "anthony"))
+	space.add(Dual(char, rect, randos, "roberte"))
 })
 
 function layer_two_shapes() {

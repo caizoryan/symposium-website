@@ -1,12 +1,13 @@
 {
-  "name": "pixi-project",
+  "name": "Symposium Website",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "npm run dev",
     "build": "node scripts/esbuild.prod.mjs",
-    "dev": "node scripts/esbuild.dev.mjs -w"
+    "dev": "node scripts/esbuild.dev.mjs -w",
+    "deploy": "git subtree push --prefix public origin gh-pages"
   },
   "dependencies": {
     "pixi.js": "^8.8.1"

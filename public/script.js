@@ -9,6 +9,22 @@ import * as Chowk from "./chowk/monke.js"
 let canvas_dom
 let timeout = undefined
 
+const Easings = {
+	linear: (t) => t,
+	InQuad: (t) => t * t,
+	OutQuad: (t) => t * (2 - t),
+	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+	InCubic: (t) => t * t * t,
+	OutCubic: (t) => --t * t * t + 1,
+	InOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+	InQuart: (t) => t * t * t * t,
+	OutQuart: (t) => 1 - --t * t * t * t,
+	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
+	InQuint: (t) => t * t * t * t * t,
+	OutQuint: (t) => 1 + --t * t * t * t * t,
+	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
+};
+
 const lerp = (start, stop, amt) => amt * (stop - start) + start
 const invlerp = (x, y, a) => clamp((a - x) / (y - x));
 const clamp = (a, min = 0, max = 1) => Math.min(max, Math.max(min, a));
@@ -141,7 +157,11 @@ let call_everyone = () => {
 			el.rectangle.h())
 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 	})
+
+	let pos = random_pos(Title.rectangle.w() + Schedule.rectangle.w() + 3, Schedule.rectangle.h())
+	Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 }
+
 
 
 /**
@@ -950,9 +970,20 @@ const Banner = (() => {
 			"linear-gradient(to right, #2222 1px, transparent 1px)",
 			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
 		]
-	}]
+	}, ["p.description", {
+		"font-family": "oracle"
+	}]]
 
-	let html = [".ornament", { style: inlinecss }]
+	let html = [".ornament", { style: inlinecss },
+		["h4", "About"],
+		["p.description", `
+			As art/design students envisioning a meaningful engagement with our practices (post-graduation) is either threatened by the hype of AI or is hijacked by scarcity of individual opportunities and the culture of self promotion.
+		`],
+
+		["p.description", `
+			This symposium hopes to bring to light the multitude of issues surrounding creative practices while reflecting on the ‘alternative’ modes of engaging with our practice, mutual care and pedagogy. At Alt-practices we aim to generate a connection between our locality in Toronto, with collectives/studios/individuals practicing alternatives, and the art/design students at OCAD. We invite you to join us, in a dialogue to see beyond the aspirations of “a successful career” and to envision novel forms of (alt) practices through an alliance with our locality and peers
+		`]
+	]
 
 	return { html, css, rectangle }
 })()
@@ -1190,8 +1221,8 @@ function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = 
 
 
 let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
-	x: dims.x + dims.w + offset(2),
-	y: dims.y + dims.h - Timing.rectangle.h() + offset(2)
+	x: dims.x + offset(8),
+	y: dims.y + dims.h + offset(2)
 })))
 
 
@@ -1412,7 +1443,8 @@ let container = (rectangle, ...doms) => {
 	return { html, css, rectangle }
 }
 
-let Title = container(new Rectangle(0, 0, 35, 30), Alternative, Practices, Symposium)
+let Title = container(new Rectangle(0, 0, 25, 30), Alternative, Practices, Symposium)
+//let TitleChild = Child(Title, follow_fn(Title.rectangle, (dim) => ({ x: dim.x - Title.rectangle.w() + offset(3), y: dim.y - 5 + offset(3) })))
 
 // x-------------------x
 // Shape creator
@@ -1469,17 +1501,10 @@ function layer_two_shapes() {
 }
 layer_two_shapes()
 
-Schedule.rectangle.add_child(child_timing)
-space.add(Schedule)
+Title.rectangle.add_child(child_timing)
+//space.add(Schedule)
 space.add(child_timing)
 
-function mount_schedule_banner() {
-	let dom = maskcontainer(First, Second)
-	let masked = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
-	Schedule.rectangle.add_child(masked)
-	space.add(masked)
-}
-mount_schedule_banner()
 
 // -----------------------
 // (u) COMPONENT: Button
@@ -1513,30 +1538,30 @@ function label_number_input(label, getter, setter) {
 	]
 }
 
-const Easings = {
-	linear: (t) => t,
-	InQuad: (t) => t * t,
-	OutQuad: (t) => t * (2 - t),
-	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
-	InCubic: (t) => t * t * t,
-	OutCubic: (t) => --t * t * t + 1,
-	InOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
-	InQuart: (t) => t * t * t * t,
-	OutQuart: (t) => 1 - --t * t * t * t,
-	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
-	InQuint: (t) => t * t * t * t * t,
-	OutQuint: (t) => 1 + --t * t * t * t * t,
-	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
-};
+
+//Schedule.rectangle.add_child(TitleChild)
+let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle, (dim) => ({ x: dim.x + dim.w + 3 + offset(3), y: dim.y + offset(3) })))
+Title.rectangle.add_child(schedule_child)
 
 space.add(Title)
+space.add(schedule_child)
+
+function mount_schedule_banner() {
+	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, 18, 10))
+	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
+	Schedule.rectangle.add_child(schedule_title)
+	space.add(schedule_title)
+}
+mount_schedule_banner()
+
 render(Main, document.body)
 
 //----------------------------
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Schedule, Information, Banner, Title]
+let comps = [Information, Banner]
+call_everyone()
 
 // //
 // setInterval(() => {

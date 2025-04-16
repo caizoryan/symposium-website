@@ -1001,6 +1001,7 @@ let Schedule = (function() {
 		".schedule", {
 			"font-family": "monospace",
 			background: colors.white,
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
 			color: () => colors.text,
 			//transition: [["all", ms(200)]],
 			cursor: "crosshair",
@@ -1009,6 +1010,7 @@ let Schedule = (function() {
 		},
 
 		["h2", { "padding": rem(1) }],
+		[".break", { "padding": rem(1) }],
 
 		[".schedule-container", {
 			"height": percent(100),
@@ -1027,9 +1029,13 @@ let Schedule = (function() {
 				"background-color": colors.highlight
 			}],
 
-			[".title", { "font-family": "ductus" }],
+			[".title", {
+				"font-size": em(1.8),
+				"text-transform": "lowercase",
+				"font-family": "cirrus"
+			}],
 			[".time", {
-				"font-family": "cirrus",
+				"font-family": "oracle",
 				display: "block-inline",
 				padding: [[0, em(.5)]],
 				"width": "min-content",
@@ -1039,7 +1045,8 @@ let Schedule = (function() {
 		],
 	]
 
-	let { x, y } = offscreen()
+	//let { x, y } = offscreen()
+	let { x, y } = random_pos(30, 60)
 	let rectangle = new Rectangle(x, y, 30, 60, { unit: "v" })
 	let inlincecss = rectangle.css()
 
@@ -1047,35 +1054,17 @@ let Schedule = (function() {
 		[".schedule", { style: inlincecss },
 			["h2", ""],
 			[".schedule-container",
-				[".section",
-					[".title", "Eric Francisco"],
-					[".time", "2pm"]
-				],
-				[".section",
-					[".title", "Scott Deeming"],
-					[".time", "3pm"]
-				],
-				[".section",
-					[".title", "Garry Ing"],
-					[".time", "3pm"]
-				],
-				[".section",
-					[".title", "1RG"],
-					[".time", "4pm"]
-				],
-				[".section",
-					[".title", "E.L Guerero"],
-					[".time", "4pm"]
-				],
-				[".section",
-					[".title", "Symon Oliver"],
-					[".time", "4pm"]
-				],
-				[".section",
-					[".title", "SHEEP School"],
-					[".time", "2pm"]
-				],
-
+				...sections.map(e => {
+					if (e.time) {
+						return [".section",
+							[".title", e.title],
+							[".time", e.time],
+						]
+					}
+					else {
+						return [".break", e.title]
+					}
+				})
 			]
 		]
 	return { html, css, rectangle }
@@ -1091,7 +1080,7 @@ let Timing = (function() {
 			//transition: [["all", ms(200)]],
 			cursor: "crosshair",
 			border: ".5px dotted " + colors.highlight,
-			"box-shadow": [[0, 0, px(30), px(10), colors.black + "11"]],
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
 			padding: em(1),
 			transition: "transform 400ms",
 		},
@@ -1177,6 +1166,34 @@ let Timing = (function() {
 	return { html, css, rectangle }
 })()
 
+function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = em(3.7)) {
+	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
+	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
+	let fo = { style: "font-family: " + font + ";font-size: " + size + ";" }
+	let Alternative = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
+		return { html, css, rectangle }
+	})()
+
+	let Practices = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[1] })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
+		return { html, css, rectangle }
+	})()
+
+	let dom = maskcontainer(Alternative, Practices, rectangle, time)
+	return dom
+}
+
+
+let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
+	x: dims.x + dims.w + offset(2),
+	y: dims.y + dims.h - Timing.rectangle.h() + offset(2)
+})))
+
 
 const Stage = (() => {
 	const html = () => hdom([".canvas", { ref: init_p5 }])
@@ -1224,19 +1241,14 @@ function follow_fn(rectangle, anchor) {
 			let pos = anchor(dims)
 			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
 
-			let pausy = () => {
-				let tl = rectangle.navigator.timeline
-				tl.clear()
-				tl.add(animate.prop(pause(rectangle.y(), actual), rectangle.y))
-			}
-
 			let jumpy = () => {
 				let tl = rectangle.navigator.timeline
 				tl.clear()
 				tl.add(animate.prop(jump(rectangle.y(), actual), rectangle.y))
 			}
 
-			toss() ? jumpy() : actual()
+			actual()
+			//toss() ? jumpy() : actual()
 		}, 700)
 	}
 }
@@ -1319,7 +1331,7 @@ let imagematerial = (src) => ({
  * @param {Rectangle} rectangle 
  * @returns {RectangleDOM}
  * */
-const maskcontainer = (first, second, rectangle) => {
+const maskcontainer = (first, second, rectangle, t = 500) => {
 	const runreset = (el) => {
 		el.rectangle.x(0)
 		el.rectangle.y(0)
@@ -1350,8 +1362,8 @@ const maskcontainer = (first, second, rectangle) => {
 
 		animate.prop(
 			[
-				{ start, end: start, duration: 1500, },
-				{ start, end, duration: 500, onend }
+				{ start, end: start, duration: t * 3, },
+				{ start, end, duration: t, onend }
 			],
 			ordered()[1].rectangle[axis]
 		).setEasing("InCubic")
@@ -1377,28 +1389,30 @@ const maskcontainer = (first, second, rectangle) => {
 	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
 }
 
-function fucker() {
-	let Alternative = (() => {
-		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: colored_grid("white") })
-		let inlinecss = rectangle.css()
-		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", "Alternative"]])
-		return { html, css, rectangle }
-	})()
+/**@returns {Material}*/
+let emptycolor = (color = colors.white) => ({
+	css: () => CSS.css({
+		"background-color": color,
+	})
+})
 
-	let Practices = (() => {
-		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: colored_grid("white") })
-		let inlinecss = rectangle.css()
-		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", "Practices"]])
-		return { html, css, rectangle }
-	})()
+let Alternative = Dual("Alternative", new Rectangle(0, 0, 25, 10, { strategy: "absolute" }), undefined, 750)
+let Practices = Dual("Practices", new Rectangle(0, 10, 25, 10, { strategy: "absolute" }), undefined, 500)
+let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "absolute" }), [emptycolor(colors.white), white_grid], 650)
 
-	let rectangle = new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
-	let dom = maskcontainer(Alternative, Practices, rectangle)
-	let masked = Child(dom, follow_simple(dom.rectangle))
-	//Schedule.rectangle.add_child(masked)
-	space.add(masked)
+/**
+ * @param {RectangleDOM[]} doms
+ * @param {Rectangle} rectangle
+ * @returns {RectangleDOM}
+ * */
+let container = (rectangle, ...doms) => {
+	let inline = rectangle.css()
+	let html = [".container", { style: inline }, ...doms.map(e => e.html)]
+	let css = [...doms.map(e => e.css)]
+	return { html, css, rectangle }
 }
-//fucker( )
+
+let Title = container(new Rectangle(0, 0, 35, 30), Alternative, Practices, Symposium)
 
 // x-------------------x
 // Shape creator
@@ -1444,7 +1458,7 @@ layer_one_shapes()
 space.add(Information)
 space.add(Stage)
 space.add(Banner)
-space.add(Timing)
+//space.add(Timing)
 
 function layer_two_shapes() {
 	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
@@ -1455,11 +1469,13 @@ function layer_two_shapes() {
 }
 layer_two_shapes()
 
+Schedule.rectangle.add_child(child_timing)
 space.add(Schedule)
+space.add(child_timing)
 
 function mount_schedule_banner() {
 	let dom = maskcontainer(First, Second)
-	let masked = Child(dom, follow_simple(dom.rectangle))
+	let masked = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
 	Schedule.rectangle.add_child(masked)
 	space.add(masked)
 }
@@ -1513,13 +1529,14 @@ const Easings = {
 	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
 };
 
+space.add(Title)
 render(Main, document.body)
 
 //----------------------------
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Schedule, Information, Banner, Timing]
+let comps = [Schedule, Information, Banner, Title]
 
 // //
 // setInterval(() => {

@@ -14,6 +14,7 @@ window.onresize = () => {
 	console.log("resize", windowwidth())
 }
 let scale = mem(() => windowwidth() > 1100 ? 1 : .75)
+let mobile = mem(() => windowwidth() < 900 ? true : false)
 
 const Easings = {
 	linear: (t) => t,
@@ -61,7 +62,7 @@ let sections = [
 
 	{ title: "Panel (2)", },
 	{ title: "Skot Deeming", time: "6:10" },
-	{ title: "Eric Francsico", time: "6:30" },
+	{ title: "Eric Francsico (Reflex Editions)", time: "6:30" },
 	{ title: "Symon Oliver (Tennis Studio)", time: "6:50" },
 	{ title: "Discussion", time: "7:10" },
 
@@ -1099,7 +1100,6 @@ let Schedule = (function() {
 			//transition: [["all", ms(200)]],
 			cursor: "grab",
 			display: "grid",
-			"grid-template-rows": [[percent(15), percent(85)]]
 		},
 
 		["h1", { "padding": rem(1.5), "pointer-events": "none" }],
@@ -1117,29 +1117,38 @@ let Schedule = (function() {
 
 		[".section", {
 			margin: [[0, rem(1.25)]],
-			padding: rem(.25),
+			padding: [[rem(.85), rem(.55), rem(1.5), rem(.55)]],
 			"padding-bottom": rem(1.25),
+			"font-weight": 600,
 			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
 			cursor: "pointer",
+			display: "grid",
+			"grid-template-columns": [[percent(23), percent(77)]]
 		},
 			[":hover", {
-				color: colors.white,
 				"background-color": colors.highlight
 			}],
 
 			[".title", {
-				"font-size": em(1.8),
+				"font-size": em(1.9),
 				"text-transform": "lowercase",
-				"font-family": "cirrus"
+				"font-family": "cirrus",
+				"background-color": colors.white
 			}],
+
 			[".time", {
-				"font-family": "oracle",
+				"font-family": "oracle-simple",
+				"font-weight": "100",
 				display: "block-inline",
-				padding: [[0, em(.5)]],
+				"font-size": em(1.3),
+				padding: [[rem(.2), rem(.5)]],
 				"width": "min-content",
-				"background-color": colors.highlight, color: colors.white,
-				"border-radius": px(15)
+				"height": "min-content",
+				//"background-color": colors.highlight,
+				color: colors.highlight,
+				border: "1px solid " + colors.highlight,
+				"border-radius": px(50)
 			}]
 		],
 	]
@@ -1158,11 +1167,12 @@ let Schedule = (function() {
 				["h1", ""],
 				[".schedule-container",
 					...sections.map(e => {
+
 						if (e.time) {
 							return [".section",
 								{ onclick: call_everyone },
-								[".title", e.title],
 								[".time", e.time],
+								[".title", e.title],
 							]
 						}
 						else {

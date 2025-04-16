@@ -309,6 +309,9 @@ function Navigator(rectangle) {
 	let destination = sig({ x: rectangle.x(), y: rectangle.y() })
 
 	const navigate_to = (x, y, inc, int) => {
+		// disabled on mobile
+		if (mobile()) return
+
 		timeline.clear()
 		destination({ x, y })
 
@@ -402,7 +405,7 @@ class Rectangle {
 	 * @param {RectangleOpts} [opts]
 	 */
 	constructor(x, y, w, h, opts) {
-		const default_opts = { xAxis: "left", yAxis: "top", strategy: "fixed", unit: "v" }
+		const default_opts = { xAxis: "left", yAxis: "top", strategy: "absolute", unit: "v" }
 		/** @type {Chowk.Signal<RectangleOpts>} */
 		this.opts = sig(Object.assign({}, default_opts, opts))
 
@@ -467,7 +470,7 @@ class Rectangle {
 			css(rect(
 				this.x() + this.unit("x"),
 				this.y() + this.unit("y"),
-				this.w() + this.unit("w"),
+				mobile() ? "90vw" : this.w() + this.unit("w"),
 				this.h() + this.unit("h"),
 				this.opts()
 			)) +
@@ -536,7 +539,7 @@ function Squad(parent, children) { }
  *	start: number,
  *	elapsed: Chowk.Signal<number>,
  *	last: Chowk.Signal<number>,
- *	add: (fn: ClockCallback) => void
+ *	add: (fn: ClockCallback) => Function
  *	pause: () => void,
  *	play: () => void,
  *	paused: boolean
@@ -558,7 +561,10 @@ function Clock() {
 	i.last = sig(0)
 
 	/**@param {ClockCallback} fn*/
-	i.add = (fn) => callbacks.push(fn)
+	i.add = (fn) => {
+		callbacks.push(fn)
+		return () => callbacks.splice(callbacks.findIndex(f => f === fn), 1)
+	}
 
 	/**@type {FrameRequestCallback}*/
 	const run = stamp => {
@@ -620,9 +626,16 @@ function Space(style_ref) {
 		space_entities([...space_entities(), el])
 	}
 
+	const hiding = sig(false)
+	const hide = () => hiding(true)
+	const show = () => {
+		if (hiding()) window.location.reload()
+	}
+
 	const space_dom = mem(() =>
 		hdom([".main",
 			//{ onclick: call_everyone },
+			{ style: () => "display:" + (hiding() ? "none" : "block") },
 			...space_entities().map(e => e.html)
 		])
 	)
@@ -630,10 +643,59 @@ function Space(style_ref) {
 	return {
 		add,
 		html: space_dom,
+		hide, show,
 	}
 }
 
 let space = Space(style)
+
+function MobileSpace() {
+	//
+	/**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
+	const space_entities = sig([])
+
+	/**
+	 * @param {RectangleDOM} el
+	 * */
+	const add = (el) => {
+		space_entities([...space_entities(), el,])
+	}
+
+	let activate = () => {
+		let total = 0
+		space_entities().forEach((el, i) => {
+			if (el.rectangle.navigator) el.rectangle.navigator.timeline.clear()
+			el.rectangle.x(random(0, 5))
+			el.rectangle.y(total)
+			total += el.rectangle.h()
+		})
+	}
+
+	const hiding = sig(true)
+	const hide = () => hiding(true)
+	const show = () => {
+		activate()
+		hiding(false)
+	}
+
+	const space_dom = mem(() =>
+		hdom([".container",
+			{ style: () => `overflow-y: scroll; overflow-x: hidden;   position:relative; height:100vh` },
+			[".main",
+				//{ onclick: call_everyone },
+				{ style: () => "display:" + (hiding() ? "none" : "block") + `; height: ${space_entities().reduce((acc, el) => acc + el.rectangle.h(), 5)}vh;position: relative;` },
+				...space_entities().map(e => e.html)
+			]])
+	)
+
+	return {
+		add,
+		html: space_dom,
+		hide, show,
+	}
+}
+
+let mobile_space = MobileSpace()
 
 /**
  * @typedef {{
@@ -806,7 +868,7 @@ function Prop(clock, keyframes, setter) {
 			return api
 		},
 
-		destroy() { should_destroy = true },
+		destroy() { should_destroy = true; destroy() },
 		animate() { api.active = true },
 		loop() { api.looping = true },
 		val() { return api.currentValue },
@@ -856,7 +918,7 @@ function Prop(clock, keyframes, setter) {
 		return easingFn(amt) * (end - start) + start
 	}
 
-	clock.add(api.update)
+	let destroy = clock.add(api.update)
 
 	return api
 }
@@ -964,12 +1026,12 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 // -----------------------
 // *Header: COMPONENTs
 // -----------------------
-const Main = () => hdom([["style", () => css(style)], space.html])
+const Main = () => hdom([["style", () => css(style)], space.html, mobile_space.html])
 
 /**@type RectangleDOM*/
 const Banner = (() => {
 	let { x, y } = offscreen()
-	let rectangle = new Rectangle(x, y, 25, 40, { unit: "v" })
+	let rectangle = new Rectangle(x, y, 25, 40, { unit: "v", strategy: "absolute" })
 
 	let inlinecss = rectangle.css()
 
@@ -1042,7 +1104,7 @@ const Information = (() => {
 	let rectangle = new Rectangle(
 		x, y,
 		100 - 40 - 1, 60,
-		{ unit: "v", material }
+		{ unit: "v", material, strategy: "absolute" }
 	)
 
 	let style = rectangle.css()
@@ -1155,7 +1217,7 @@ let Schedule = (function() {
 
 	//let { x, y } = offscreen()
 	let { x, y } = random_pos(30, 60)
-	let rectangle = new Rectangle(x, y, 30, 60, { unit: "v" })
+	let rectangle = new Rectangle(x, y, 30, 60, { unit: "v", strategy: "absolute" })
 	let inlincecss = rectangle.css()
 
 	const html = () => {
@@ -1545,7 +1607,7 @@ let container = (rectangle, ...doms) => {
 	return { html, css, rectangle }
 }
 
-let Title = container(new Rectangle(0, 0, 25, 30), Alternative, Practices, Symposium)
+let Title = container(new Rectangle(0, 0, 25, 30, { strategy: "absolute" }), Alternative, Practices, Symposium)
 
 // x-------------------x
 // Shape creator
@@ -1653,16 +1715,29 @@ let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle,
 	(dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
 Title.rectangle.add_child(schedule_child)
 
+
 space.add(Title)
 space.add(schedule_child)
 
-function mount_schedule_banner() {
+const schedule_title = (() => {
 	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, 22, 10))
 	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
-	Schedule.rectangle.add_child(schedule_title)
-	space.add(schedule_title)
-}
+	return schedule_title
+})()
+
+function mount_schedule_banner() { Schedule.rectangle.add_child(schedule_title), space.add(schedule_title) }
 mount_schedule_banner()
+
+mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 5)))
+mobile_space.add(Title)
+mobile_space.add(child_timing)
+
+mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 10)))
+mobile_space.add(banner_child)
+
+mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 10)))
+mobile_space.add(schedule_title)
+mobile_space.add(schedule_child)
 
 render(Main, document.body)
 
@@ -1688,3 +1763,16 @@ call_everyone()
 // 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 25, 350)
 // 	})
 // }, 15000)
+
+eff_on(mobile, () => {
+	if (mobile()) {
+		space.hide()
+		mobile_space.show()
+	}
+
+	else {
+		space.show()
+		mobile_space.hide()
+	}
+
+})

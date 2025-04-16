@@ -1032,7 +1032,7 @@ const Main = () => hdom([["style", () => css(style)], space.html, mobile_space.h
 /**@type RectangleDOM*/
 const Banner = (() => {
 	let { x, y } = offscreen()
-	let rectangle = new Rectangle(x, y, 25, 40, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 25, 45, { unit: "v", strategy: "absolute" })
 
 	let inlinecss = rectangle.css()
 
@@ -1062,7 +1062,10 @@ const Banner = (() => {
 
 	let html = () => {
 		let ref
-		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		mounted(() => drag(ref, {
+			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
+			, enabled: () => !mobile()
+		}))
 		return hdom([".banner", { ref: e => ref = e, style: inlinecss },
 			["h4", "About"],
 			["p.description", `
@@ -1223,7 +1226,10 @@ let Schedule = (function() {
 
 	const html = () => {
 		let ref
-		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		mounted(() => drag(ref, {
+			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
+			, enabled: () => !mobile()
+		}))
 
 		return hdom(
 			[".schedule", { style: inlincecss, ref: e => ref = e },
@@ -1333,7 +1339,10 @@ let Timing = (function() {
 
 	const html = () => {
 		let ref
-		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		mounted(() => drag(ref, {
+			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
+			, enabled: () => !mobile()
+		}))
 		return hdom([".timing",
 			{ style: inlincecss, ref: e => ref = e, },
 			["h2.date", { style: date_css }, "22 APRIL"],
@@ -1600,7 +1609,10 @@ let container = (rectangle, ...doms) => {
 
 	let html = () => {
 		let ref
-		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		mounted(() => drag(ref, {
+			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
+			, enabled: () => !mobile()
+		}))
 		return hdom([".container", { ref: e => ref = e, style: inline }, ...doms.map(e => e.html)])
 	}
 

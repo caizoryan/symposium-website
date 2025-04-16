@@ -5,6 +5,7 @@ export const drag = (elem, options = {}) => {
 	const bound = (['inner', 'outer', 'none'].includes(options.bound)) ? options.bound : 'inner';
 	const set_left = options.set_left ? options.set_left : (left) => { elem.style.left = left + "px"; };
 	const set_top = options.set_top ? options.set_top : (top) => { elem.style.top = top + "px"; };
+	const enabled = options.enabled ? options.enabled : () => true
 
 	// For panning (translate)
 	let lastPosX, lastPosY;					// Needed because of decimals 
@@ -44,6 +45,7 @@ export const drag = (elem, options = {}) => {
 	}
 
 	function do_move(deltaX, deltaY) {
+		if (!enabled()) return
 		lastPosX += deltaX;		// Needed because of decimals
 		lastPosY += deltaY;		// Needed because of decimals
 

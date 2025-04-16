@@ -151,6 +151,8 @@ const loadfont = (src, name) => {
 // *Header: CSS Definition
 // ------------------
 let style = mut([
+	loadfont("./fonts/Roberte-Regular.woff", "roberte"),
+	loadfont("./fonts/Oracle.ttf", "oracle"),
 	loadfont("./fonts/Anthony.otf", "anthony"),
 	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
 	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
@@ -341,7 +343,7 @@ class Rectangle {
 	 * @param {RectangleOpts} [opts]
 	 */
 	constructor(x, y, w, h, opts) {
-		const default_opts = { xAxis: "left", yAxis: "top", strategy: "fixed", unit: "px" }
+		const default_opts = { xAxis: "left", yAxis: "top", strategy: "fixed", unit: "v" }
 		/** @type {Chowk.Signal<RectangleOpts>} */
 		this.opts = sig(Object.assign({}, default_opts, opts))
 
@@ -1488,7 +1490,7 @@ render(Main, document.body)
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Schedule, Information, Banner]
+let comps = [Schedule, Information, Banner, Timing]
 
 // //
 // setInterval(() => {

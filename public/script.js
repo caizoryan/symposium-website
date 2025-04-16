@@ -1242,7 +1242,7 @@ let Schedule = (function() {
 
 						if (e.time) {
 							return [".section",
-								{ onclick: call_everyone },
+								{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
 								[".time", e.time],
 								[".title", e.title],
 							]

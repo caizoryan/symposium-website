@@ -1050,6 +1050,102 @@ let Schedule = (function() {
 	return { html, css, rectangle }
 })()
 
+/**@type RectangleDOM*/
+let Timing = (function() {
+	let css = [
+		".schedule", {
+			"font-family": "monospace",
+			background: colors.white,
+			color: () => colors.text,
+			//transition: [["all", ms(200)]],
+			cursor: "crosshair",
+			border: ".5px dotted " + colors.highlight,
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "11"]],
+			padding: em(1),
+			transition: "transform 400ms",
+		},
+
+		[".addy-container", {
+			width: "min-content",
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "11"]],
+		}],
+
+		["h2.address", {
+			"font-family": "oracle",
+			"font-weight": 100,
+			"line-height": em(1.5),
+			"background-color": colors.white,
+			"color": colors.black,
+			//border: [[px(.5), "solid", "black"]],
+			// "background-color": colors.text,
+			"padding": [[0, px(5)]],
+			"font-size": em(1.7),
+			width: em(10),
+		}],
+		[".time", {
+			transition: "transform 800ms",
+			"background-color": colors.white,
+			//"box-shadow": [[0, 0, px(30), px(10), colors.white + "22"]],
+			"font-size": em(2.3),
+			"margin-top": px(10),
+			"margin-bottom": px(40),
+			width: em(10),
+		}],
+
+		["h2.date", {
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "11"]],
+			transition: "transform 800ms",
+			"font-family": "oracle",
+			"font-weight": 100,
+			"line-height": em(1.4),
+			"background-color": colors.white,
+			"color": colors.black,
+			//border: [[px(.5), "solid", "black"]],
+			"margin-bottom": em(.5),
+			// "background-color": colors.text,
+			"padding": [[0, px(5)]],
+
+			"font-size": em(2.7),
+			"margin-left": em(3),
+			width: em(5.5),
+		}],
+	]
+
+	let rectangle = new Rectangle(1, 45, 50, 23, {
+		unit: "v",
+		material: colored_grid(colors.white)
+	})
+
+	let ref = rectangle.css()
+	let rotate = sig(3)
+	let inlincecss = mem(() => ref() + `transform: rotate(${rotate()}deg)`)
+
+	let resetrotate = (i) => setTimeout(() => {
+		rotate(offset(8));
+		resetrotate(Math.random() * 1500 + 1500)
+	}, i)
+
+	resetrotate(500)
+
+	let address_rotate = mem(() => rotate() * -1 * 2)
+	let date_rotate = mem(() => rotate() * -1)
+
+	let addy_css = () => `transform: translateX(8px) rotate(${address_rotate()}deg)`
+	let date_css = () => `transform: translate(8px, 12px) rotate(${date_rotate()}deg) scale(1.2)`
+
+	const html = [".schedule", { style: inlincecss },
+		["h2.date", { style: date_css }, "22 APRIL"],
+		["h4.time", { style: addy_css }, "4:00pm - 9:00pm"],
+
+		[".addy-container",
+			["h2.address", "113 McCaul"],
+			["h2.address", "(Annex Building)"],
+			["h2.address", "MCC 512"],
+		]
+	]
+	return { html, css, rectangle }
+})()
+
 
 const Stage = (() => {
 	const html = () => hdom([".canvas", { ref: init_p5 }])
@@ -1317,6 +1413,7 @@ layer_one_shapes()
 space.add(Information)
 space.add(Stage)
 space.add(Banner)
+space.add(Timing)
 
 function layer_two_shapes() {
 	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))

@@ -8,6 +8,13 @@ import * as Chowk from "./chowk/monke.js"
 let px_to_vw = (px) => (px / window.innerWidth) * 100
 let px_to_vh = (px) => (px / window.innerHeight) * 100
 
+let windowwidth = sig(window.innerWidth)
+window.onresize = () => {
+	windowwidth(window.innerWidth)
+	console.log("resize", windowwidth())
+}
+let scale = mem(() => windowwidth() > 1100 ? 1 : .75)
+
 const Easings = {
 	linear: (t) => t,
 	InQuad: (t) => t * t,
@@ -224,8 +231,7 @@ let style = mut([
 		["h" + (i + 1), {
 			"font-family": () => type.heading,
 			"font-size": em(4 - (i / 2))
-		}
-		]),
+		}]),
 
 
 	[".main", {
@@ -1047,6 +1053,42 @@ const Information = (() => {
 })()
 
 /**@type RectangleDOM*/
+const Dumplicate = (() => {
+	/**@type {Material}*/
+	let material = purple_grid
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(
+		x, y, 20, 25,
+		{ unit: "v", material }
+	)
+
+	let style = rectangle.css()
+
+	const html = [".resources", { style: style }]
+	const css = [".resources",]
+
+	return { css, html, rectangle }
+})()
+
+/**@type RectangleDOM*/
+const DumplicateSmall = (() => {
+	/**@type {Material}*/
+	let material = purple_grid
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(
+		x, y, 25, 18,
+		{ unit: "v", material }
+	)
+
+	let style = rectangle.css()
+
+	const html = [".resources", { style: style }]
+	const css = [".resources",]
+
+	return { css, html, rectangle }
+})()
+
+/**@type RectangleDOM*/
 let Schedule = (function() {
 	let css = [
 		".schedule", {
@@ -1234,11 +1276,11 @@ let Timing = (function() {
 	return { html, css, rectangle }
 })()
 
-function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = em(3.7)) {
+function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = 3.7) {
 	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
 	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
 
-	let fo = { style: "font-family: " + font + ";font-size: " + size + ";" }
+	let fo = { style: mem(() => "font-family: " + font + ";font-size: " + em(size * scale()) + ";") }
 	let Alternative = (() => {
 		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
 		let inlinecss = rectangle.css()
@@ -1335,7 +1377,8 @@ const First = (() => {
 	let ref = rectangle.css()
 	let inlinecss = () => ref()
 	let word = sig("Schedule")
-	let html = () => hdom([".test-box", { style: inlinecss }, ["h2", { style: 'font-family: "cirrus";font-weight: 100;' }, word]])
+	let html = () => hdom([".test-box", { style: inlinecss },
+		["h2", { style: () => 'font-family: "cirrus";font-weight: 100;font-size:' + em(3 * scale()) }, word]])
 	let css = [".test-box", {
 		padding: [[rem(.5), rem(1)]],
 		"font-family": "anthony",
@@ -1350,7 +1393,9 @@ const First = (() => {
 const Second = (() => {
 	let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute" })
 	let inlinecss = rectangle.css()
-	let html = () => hdom([".test-box", { style: inlinecss }, ["h2", "Schedule"]])
+	let html = () => hdom([".test-box", { style: inlinecss }, ["h2",
+		{ style: () => 'font-family: "cirrus";font-weight: 100;font-size:' + em(3 * scale()) },
+		"Schedule"]])
 	return { html, css, rectangle }
 })()
 
@@ -1534,6 +1579,8 @@ layer_one_shapes()
 
 
 space.add(Information)
+space.add(Dumplicate)
+space.add(DumplicateSmall)
 space.add(Stage)
 //space.add(Banner)
 //space.add(Timing)
@@ -1613,7 +1660,7 @@ render(Main, document.body)
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Information]
+let comps = [Information, Dumplicate, DumplicateSmall]
 call_everyone()
 
 // //

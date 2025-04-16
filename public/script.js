@@ -373,7 +373,7 @@ function Navigator(rectangle) {
 }
 
 /**
- * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%")} Unit
+ * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%" | "auto")} Unit
  * @typedef {{
  *   color?: string,
  *   opacity?: string,
@@ -466,16 +466,19 @@ class Rectangle {
 	 * @returns {() => string}
 	 */
 	css() {
-		return mem(() =>
-			css(rect(
+		return mem(() => {
+			let hunit = this.unit("h")
+			return css(rect(
 				this.x() + this.unit("x"),
 				this.y() + this.unit("y"),
 				mobile() ? "90vw" : this.w() + this.unit("w"),
 				this.h() + this.unit("h"),
 				this.opts()
 			)) +
-			(this.opts().material?.css?.() ?? "")
-		)
+				(this.opts().material?.css?.() ?? "")
+				+ (hunit == "auto" ? "height: auto;" : "")
+		})
+
 	}
 }
 
@@ -668,7 +671,8 @@ function MobileSpace() {
 			el.rectangle.x(random(0, 5))
 			el.rectangle.y(total)
 			if (i == space_entities().length - 1) {
-				el.rectangle.h(85)
+				el.rectangle.opts({ ...el.rectangle.opts(), hUnit: "auto" })
+				//el.rectangle.h(85)
 			}
 			total += el.rectangle.h()
 		})
@@ -687,7 +691,7 @@ function MobileSpace() {
 			{ style: mem(() => "display:" + (hiding() ? "none" : "block") + `;overflow-y: scroll; overflow-x: hidden;   position:relative; height:100vh`) },
 			[".main",
 				//{ onclick: call_everyone },
-				{ style: () => `; height: ${space_entities().reduce((acc, el) => acc + el.rectangle.h(), 5)}vh;position: relative;` },
+				{ style: () => `; height: ${space_entities().reduce((acc, el) => acc + el.rectangle.h(), 155)}vh;position: relative;` },
 				...space_entities().map(e => e.html)
 			]])
 	)

@@ -24,6 +24,34 @@ const mouse_y = sig(0)
 const rel_mouse_x = mem(() => mouse_x() / window.innerWidth)
 const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 
+// x---------------------------
+// schedule:
+// x---------------------------
+
+let sections = [
+	{
+		title: "introduction",
+		time: "4:00"
+	},
+	{ title: "Panel (1)", },
+	{ title: "Serena Peruzzo {1RG}", time: "4:30" },
+	{ title: "E.L guerrero", time: "4:50" },
+	{ title: "Garry Ing", time: "5:10" },
+	{ title: "Discussion", time: "5:30" },
+
+	{ title: "Panel (2)", },
+	{ title: "Skot Deeming", time: "6:10" },
+	{ title: "Eric Francsico", time: "6:30" },
+	{ title: "Symon Oliver (Tennis Studio)", time: "6:50" },
+	{ title: "Discussion", time: "7:10" },
+
+	{ title: "Panel (3)", },
+	{ title: "Myfriends studio + Teh studio + Sheep school ", time: "7:40" },
+	{ title: "Discussion", time: "8:40" },
+
+	{ title: "Final words and wrap up:", time: "9:00" },
+]
+
 // --------------------------
 // *Header: Introduction
 // --------------------------
@@ -72,7 +100,7 @@ const colors = mut({
 })
 
 const type = mut({
-	heading: "anthony"
+	heading: "cirrus"
 })
 
 
@@ -1001,6 +1029,7 @@ let Schedule = (function() {
 
 			[".title", { "font-family": "ductus" }],
 			[".time", {
+				"font-family": "cirrus",
 				display: "block-inline",
 				padding: [[0, em(.5)]],
 				"width": "min-content",
@@ -1055,7 +1084,7 @@ let Schedule = (function() {
 /**@type RectangleDOM*/
 let Timing = (function() {
 	let css = [
-		".schedule", {
+		".timing", {
 			"font-family": "monospace",
 			background: colors.white,
 			color: () => colors.text,
@@ -1075,7 +1104,7 @@ let Timing = (function() {
 		["h2.address", {
 			"font-family": "oracle",
 			"font-weight": 100,
-			"line-height": em(1.5),
+			"line-height": em(.8),
 			"background-color": colors.white,
 			"color": colors.black,
 			//border: [[px(.5), "solid", "black"]],
@@ -1088,7 +1117,7 @@ let Timing = (function() {
 			transition: "transform 800ms",
 			"background-color": colors.white,
 			//"box-shadow": [[0, 0, px(30), px(10), colors.white + "22"]],
-			"font-size": em(2.3),
+			"font-size": em(1.3),
 			"margin-top": px(10),
 			"margin-bottom": px(40),
 			width: em(10),
@@ -1107,13 +1136,13 @@ let Timing = (function() {
 			// "background-color": colors.text,
 			"padding": [[0, px(5)]],
 
-			"font-size": em(2.7),
+			"font-size": em(1.7),
 			"margin-left": em(3),
 			width: em(5.5),
 		}],
 	]
 
-	let rectangle = new Rectangle(1, 45, 50, 23, {
+	let rectangle = new Rectangle(1, 45, 20, 23, {
 		unit: "v",
 		material: colored_grid(colors.white)
 	})
@@ -1133,9 +1162,9 @@ let Timing = (function() {
 	let date_rotate = mem(() => rotate() * -1)
 
 	let addy_css = () => `transform: translateX(8px) rotate(${address_rotate()}deg)`
-	let date_css = () => `transform: translate(8px, 12px) rotate(${date_rotate()}deg) scale(1.2)`
+	let date_css = () => `transform: translate(8px, 12px) rotate(${date_rotate()}deg)`
 
-	const html = [".schedule", { style: inlincecss },
+	const html = [".timing", { style: inlincecss },
 		["h2.date", { style: date_css }, "22 APRIL"],
 		["h4.time", { style: addy_css }, "4:00pm - 9:00pm"],
 

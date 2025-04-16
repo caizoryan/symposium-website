@@ -1,13 +1,12 @@
 import { mounted, render, mut, sig, mem, eff_on, each, if_then } from "./chowk/monke.js"
 import { hdom } from "./chowk/hdom/index.js"
 import { Q5 } from "./q5/q5.js"
-// import * as pixijs from 'https://esm.sh/pixi.js'
+import { drag } from "./drag.js"
 import CSS from "./css/css.js"
-import * as ArenaType from "./arena.js"
 import * as Chowk from "./chowk/monke.js"
 
-let canvas_dom
-let timeout = undefined
+let px_to_vw = (px) => (px / window.innerWidth) * 100
+let px_to_vh = (px) => (px / window.innerHeight) * 100
 
 const Easings = {
 	linear: (t) => t,
@@ -37,8 +36,6 @@ const between = (val, min, max) => (val > min && val < max)
 
 const mouse_x = sig(0)
 const mouse_y = sig(0)
-const rel_mouse_x = mem(() => mouse_x() / window.innerWidth)
-const rel_mouse_y = mem(() => mouse_y() / window.innerHeight)
 
 // x---------------------------
 // schedule:
@@ -201,6 +198,7 @@ const loadfont = (src, name) => {
 let style = mut([
 	loadfont("./fonts/Roberte-Regular.woff", "roberte"),
 	loadfont("./fonts/Oracle.ttf", "oracle"),
+	loadfont("./fonts/Oracle_simple.ttf", "oracle-simple"),
 	loadfont("./fonts/Anthony.otf", "anthony"),
 	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
 	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
@@ -552,7 +550,6 @@ function Clock() {
 	/**@type {FrameRequestCallback}*/
 	const run = stamp => {
 		requestAnimationFrame(run)
-		console.log("cb", callbacks.length)
 
 		i.start ? null : i.start = stamp
 		i.elapsed(stamp - i.start)
@@ -612,7 +609,7 @@ function Space(style_ref) {
 
 	const space_dom = mem(() =>
 		hdom([".main",
-			{ onclick: call_everyone },
+			//{ onclick: call_everyone },
 			...space_entities().map(e => e.html)
 		])
 	)
@@ -963,27 +960,44 @@ const Banner = (() => {
 
 	let inlinecss = rectangle.css()
 
-	let css = [".ornament", {
-		background: colors.highlight,
+	let css = [".banner", {
+		padding: em(1),
+		cursor: "grab",
+		background: colors.base,
 		"background-size": [[px(40), px(40)]],
 		"background-image": [
 			"linear-gradient(to right, #2222 1px, transparent 1px)",
 			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
 		]
-	}, ["p.description", {
-		"font-family": "oracle"
-	}]]
+	},
+		["h4", {
+			"pointer-events": "none",
+		}],
+		["p.description", {
+			"pointer-events": "none",
+			"padding": em(1),
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
+			"background-color": colors.white + "dd",
+			"line-height": em(1.3),
+			"font-size": em(.8),
+			"font-family": "oracle-simple"
+		}]]
 
-	let html = [".ornament", { style: inlinecss },
-		["h4", "About"],
-		["p.description", `
+
+	let html = () => {
+		let ref
+		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		return hdom([".banner", { ref: e => ref = e, style: inlinecss },
+			["h4", "About"],
+			["p.description", `
 			As art/design students envisioning a meaningful engagement with our practices (post-graduation) is either threatened by the hype of AI or is hijacked by scarcity of individual opportunities and the culture of self promotion.
 		`],
 
-		["p.description", `
+			["p.description", `
 			This symposium hopes to bring to light the multitude of issues surrounding creative practices while reflecting on the ‘alternative’ modes of engaging with our practice, mutual care and pedagogy. At Alt-practices we aim to generate a connection between our locality in Toronto, with collectives/studios/individuals practicing alternatives, and the art/design students at OCAD. We invite you to join us, in a dialogue to see beyond the aspirations of “a successful career” and to envision novel forms of (alt) practices through an alliance with our locality and peers
 		`]
-	]
+		])
+	}
 
 	return { html, css, rectangle }
 })()
@@ -1035,13 +1049,18 @@ let Schedule = (function() {
 			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
 			color: () => colors.text,
 			//transition: [["all", ms(200)]],
-			cursor: "crosshair",
+			cursor: "grab",
 			display: "grid",
 			"grid-template-rows": [[percent(15), percent(85)]]
 		},
 
-		["h2", { "padding": rem(1) }],
-		[".break", { "padding": rem(1) }],
+		["h1", { "padding": rem(1.5), "pointer-events": "none" }],
+		[".break", {
+			"padding": rem(1),
+			"font-size": em(1.2),
+			"pointer-events": "none",
+			"font-family": "oracle"
+		}],
 
 		[".schedule-container", {
 			"height": percent(100),
@@ -1054,6 +1073,7 @@ let Schedule = (function() {
 			"padding-bottom": rem(1.25),
 			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
+			cursor: "pointer",
 		},
 			[":hover", {
 				color: colors.white,
@@ -1081,23 +1101,29 @@ let Schedule = (function() {
 	let rectangle = new Rectangle(x, y, 30, 60, { unit: "v" })
 	let inlincecss = rectangle.css()
 
-	const html =
-		[".schedule", { style: inlincecss },
-			["h2", ""],
-			[".schedule-container",
-				...sections.map(e => {
-					if (e.time) {
-						return [".section",
-							[".title", e.title],
-							[".time", e.time],
-						]
-					}
-					else {
-						return [".break", e.title]
-					}
-				})
-			]
-		]
+	const html = () => {
+		let ref
+		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+
+		return hdom(
+			[".schedule", { style: inlincecss, ref: e => ref = e },
+				["h1", ""],
+				[".schedule-container",
+					...sections.map(e => {
+						if (e.time) {
+							return [".section",
+								{ onclick: call_everyone },
+								[".title", e.title],
+								[".time", e.time],
+							]
+						}
+						else {
+							return [".break", e.title]
+						}
+					})
+				]
+			])
+	}
 	return { html, css, rectangle }
 })()
 
@@ -1109,7 +1135,7 @@ let Timing = (function() {
 			background: colors.white,
 			color: () => colors.text,
 			//transition: [["all", ms(200)]],
-			cursor: "crosshair",
+			cursor: "grab",
 			border: ".5px dotted " + colors.highlight,
 			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
 			padding: em(1),
@@ -1124,7 +1150,7 @@ let Timing = (function() {
 		["h2.address", {
 			"font-family": "oracle",
 			"font-weight": 100,
-			"line-height": em(.8),
+			"line-height": em(1.1),
 			"background-color": colors.white,
 			"color": colors.black,
 			//border: [[px(.5), "solid", "black"]],
@@ -1137,7 +1163,7 @@ let Timing = (function() {
 			transition: "transform 800ms",
 			"background-color": colors.white,
 			//"box-shadow": [[0, 0, px(30), px(10), colors.white + "22"]],
-			"font-size": em(1.3),
+			"font-size": em(1.5),
 			"margin-top": px(10),
 			"margin-bottom": px(40),
 			width: em(10),
@@ -1156,7 +1182,7 @@ let Timing = (function() {
 			// "background-color": colors.text,
 			"padding": [[0, px(5)]],
 
-			"font-size": em(1.7),
+			"font-size": em(2.3),
 			"margin-left": em(3),
 			width: em(5.5),
 		}],
@@ -1184,22 +1210,28 @@ let Timing = (function() {
 	let addy_css = () => `transform: translateX(8px) rotate(${address_rotate()}deg)`
 	let date_css = () => `transform: translate(8px, 12px) rotate(${date_rotate()}deg)`
 
-	const html = [".timing", { style: inlincecss },
-		["h2.date", { style: date_css }, "22 APRIL"],
-		["h4.time", { style: addy_css }, "4:00pm - 9:00pm"],
+	const html = () => {
+		let ref
+		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		return hdom([".timing",
+			{ style: inlincecss, ref: e => ref = e, },
+			["h2.date", { style: date_css }, "22 APRIL"],
+			["h4.time", { style: addy_css }, "4:00pm - 9:00pm"],
 
-		[".addy-container",
-			["h2.address", "113 McCaul"],
-			["h2.address", "(Annex Building)"],
-			["h2.address", "MCC 512"],
-		]
-	]
+			[".addy-container",
+				["h2.address", "113 McCaul"],
+				["h2.address", "(Annex Building)"],
+				["h2.address", "MCC 512"],
+			]
+		])
+	}
 	return { html, css, rectangle }
 })()
 
 function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = em(3.7)) {
 	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
 	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
+
 	let fo = { style: "font-family: " + font + ";font-size: " + size + ";" }
 	let Alternative = (() => {
 		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
@@ -1324,7 +1356,7 @@ const Second = (() => {
  * // Dom from Rectangle
  * // x-------------------x
  * */
-const domfromrectangle = (rect) => {
+const domfromrectangle = (rect, atts = {}) => {
 	let css = ""
 	let ref = rect.css()
 	let off = sig(offset(365))
@@ -1334,7 +1366,7 @@ const domfromrectangle = (rect) => {
 	}, 2000 + Math.random() * 2000)
 
 	let inlinecss = () => ref() + `;transform: rotate(${off()}deg);transition: transform 200ms`
-	let html = () => hdom(["div", { style: inlinecss }])
+	let html = () => hdom(["div", { style: inlinecss, ...atts }])
 	return { html, css, rectangle: rect }
 }
 
@@ -1344,7 +1376,8 @@ let imagematerial = (src) => ({
 		background: "#fff0",
 		"background-image": url(src),
 		"background-size": "contain",
-		"background-repeat": "no-repeat"
+		"background-repeat": "no-repeat",
+		"cursor": "pointer",
 	})
 })
 
@@ -1376,14 +1409,12 @@ const maskcontainer = (first, second, rectangle, t = 500) => {
 	}
 
 	const onanimationend = () => {
-		console.log("scheduled")
 		swap()
 		reset()
 		setTimeout(_animate, 5)
 	}
 
 	const _animate = () => {
-		console.log("ran")
 		let direction = toss() ? -1 : 1
 		let axis = toss() ? "x" : "y"
 
@@ -1413,11 +1444,14 @@ const maskcontainer = (first, second, rectangle, t = 500) => {
 	const cssref = rectangle.css()
 	const inlinecss = mem(() => cssref() + "overflow: hidden;")
 	const render = e => e.html()
-	const html = [".masked", { style: inlinecss }, () => each(ordered, render)]
+
+	const html = () => {
+		return hdom([".masked", { style: inlinecss }, () => each(ordered, render)])
+	}
 
 	onanimationend()
 
-	return { html, css: [".masked", { position: "relative" }, first.css, second.css], rectangle }
+	return { html, css: [".masked", { style: CSS.css({ position: "relative", "pointer-events": "none" }) }, first.css, second.css], rectangle }
 }
 
 /**@returns {Material}*/
@@ -1437,8 +1471,15 @@ let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "abso
  * @returns {RectangleDOM}
  * */
 let container = (rectangle, ...doms) => {
-	let inline = rectangle.css()
-	let html = [".container", { style: inline }, ...doms.map(e => e.html)]
+	let style = rectangle.css()
+	let inline = () => style() + ";cursor: grab;"
+
+	let html = () => {
+		let ref
+		mounted(() => drag(ref, { set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px)) }))
+		return hdom([".container", { ref: e => ref = e, style: inline }, ...doms.map(e => e.html)])
+	}
+
 	let css = [...doms.map(e => e.css)]
 	return { html, css, rectangle }
 }
@@ -1456,7 +1497,7 @@ const shape = (src, fn) => {
 		material: imagematerial(src)
 	})
 
-	let domdom = domfromrectangle(rectangle)
+	let domdom = domfromrectangle(rectangle, { onclick: call_everyone })
 	fn = fn ? fn(rectangle) : follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
 
 	return Child(domdom, fn)

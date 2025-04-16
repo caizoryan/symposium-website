@@ -635,7 +635,7 @@ function Space(style_ref) {
 	const space_dom = mem(() =>
 		hdom([".main",
 			//{ onclick: call_everyone },
-			{ style: () => "display:" + (hiding() ? "none" : "block") },
+			{ style: mem(() => "display:" + (hiding() ? "none" : "block")) },
 			...space_entities().map(e => e.html)
 		])
 	)
@@ -672,6 +672,7 @@ function MobileSpace() {
 	}
 
 	const hiding = sig(true)
+	eff_on(hiding, () => console.log("mobile set as", hiding()))
 	const hide = () => hiding(true)
 	const show = () => {
 		activate()
@@ -680,10 +681,10 @@ function MobileSpace() {
 
 	const space_dom = mem(() =>
 		hdom([".container",
-			{ style: () => `overflow-y: scroll; overflow-x: hidden;   position:relative; height:100vh` },
+			{ style: mem(() => "display:" + (hiding() ? "none" : "block") + `;overflow-y: scroll; overflow-x: hidden;   position:relative; height:100vh`) },
 			[".main",
 				//{ onclick: call_everyone },
-				{ style: () => "display:" + (hiding() ? "none" : "block") + `; height: ${space_entities().reduce((acc, el) => acc + el.rectangle.h(), 5)}vh;position: relative;` },
+				{ style: () => `; height: ${space_entities().reduce((acc, el) => acc + el.rectangle.h(), 5)}vh;position: relative;` },
 				...space_entities().map(e => e.html)
 			]])
 	)

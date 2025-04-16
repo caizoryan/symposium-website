@@ -132,6 +132,11 @@ const random_pos = (w = 10, h = 10) => ({
 	x: ((100 - w) * Math.random()),
 	y: ((100 - h) * Math.random()),
 })
+let random = (min, max) => Math.random() * (max - min) + min;
+let random_range = (x = [0, 100], y = [0, 100]) => ({
+	x: random(x[0], x[1]),
+	y: random(y[0], y[1])
+})
 
 const offscreen = () => {
 	// either outside positive
@@ -155,7 +160,8 @@ let call_everyone = () => {
 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 	})
 
-	let pos = random_pos(Title.rectangle.w() + Schedule.rectangle.w() + 3, Schedule.rectangle.h())
+	let w = Title.rectangle.w() + Schedule.rectangle.w() + Banner.rectangle.w() + 2
+	let pos = random_range([5, 100 - w], [0, 100 - Schedule.rectangle.h()])
 	Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 }
 
@@ -1046,7 +1052,7 @@ let Schedule = (function() {
 		".schedule", {
 			"font-family": "monospace",
 			background: colors.white,
-			"box-shadow": [[0, 0, px(30), px(10), colors.black + "22"]],
+			"box-shadow": [[0, 0, px(30), px(10), colors.black + "33"]],
 			color: () => colors.text,
 			//transition: [["all", ms(200)]],
 			cursor: "grab",
@@ -1183,7 +1189,7 @@ let Timing = (function() {
 			"padding": [[0, px(5)]],
 
 			"font-size": em(2.3),
-			"margin-left": em(3),
+			"margin-left": em(1.2),
 			width: em(5.5),
 		}],
 	]
@@ -1253,8 +1259,8 @@ function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = 
 
 
 let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
-	x: dims.x + offset(8),
-	y: dims.y + dims.h + offset(2)
+	x: dims.x - random(0, 8),
+	y: dims.y + dims.h - random(0, 2)
 })))
 
 
@@ -1485,7 +1491,6 @@ let container = (rectangle, ...doms) => {
 }
 
 let Title = container(new Rectangle(0, 0, 25, 30), Alternative, Practices, Symposium)
-//let TitleChild = Child(Title, follow_fn(Title.rectangle, (dim) => ({ x: dim.x - Title.rectangle.w() + offset(3), y: dim.y - 5 + offset(3) })))
 
 // x-------------------x
 // Shape creator
@@ -1530,7 +1535,7 @@ layer_one_shapes()
 
 space.add(Information)
 space.add(Stage)
-space.add(Banner)
+//space.add(Banner)
 //space.add(Timing)
 
 function layer_two_shapes() {
@@ -1542,8 +1547,14 @@ function layer_two_shapes() {
 }
 layer_two_shapes()
 
+let banner_child = Child(Banner, follow_fn(Banner.rectangle, (dim) => ({ x: dim.x + dim.w + offset(2), y: random(0, 35) })))
+
 Title.rectangle.add_child(child_timing)
+Schedule.rectangle.add_child(banner_child)
+
+//Title.rectangle.add_child(child_timing)
 //space.add(Schedule)
+space.add(banner_child)
 space.add(child_timing)
 
 
@@ -1581,14 +1592,15 @@ function label_number_input(label, getter, setter) {
 
 
 //Schedule.rectangle.add_child(TitleChild)
-let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle, (dim) => ({ x: dim.x + dim.w + 3 + offset(3), y: dim.y + offset(3) })))
+let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle,
+	(dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
 Title.rectangle.add_child(schedule_child)
 
 space.add(Title)
 space.add(schedule_child)
 
 function mount_schedule_banner() {
-	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, 18, 10))
+	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, 22, 10))
 	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
 	Schedule.rectangle.add_child(schedule_title)
 	space.add(schedule_title)
@@ -1601,7 +1613,7 @@ render(Main, document.body)
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Information, Banner]
+let comps = [Information]
 call_everyone()
 
 // //

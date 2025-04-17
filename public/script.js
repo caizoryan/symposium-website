@@ -62,14 +62,17 @@ let sections = [
 
 	{ title: "Panel (2)", },
 	{ title: "Skot Deeming", time: "6:10" },
-	{ title: "Eric Francsico (Reflex Editions)", time: "6:30" },
-	{ title: "Symon Oliver (Tennis Studio)", time: "6:50" },
+	{ title: "Eric Francsico {Reflex Editions}", time: "6:30" },
+	{ title: "Symon Oliver {Tennis Studio}", time: "6:50" },
 	{ title: "Discussion", time: "7:10" },
 
 	{ title: "Panel (3)", },
-	{ title: "Myfriends studio + Teh studio + Sheep school ", time: "7:40" },
+	{ title: "Myfriends studio", time: "7:40" },
+	{ title: "Jasmine Gui {Teh studio}", time: "&" },
+	{ title: "Sheep school ", time: "&" },
 	{ title: "Discussion", time: "8:40" },
 
+	{ title: "Wrap up", },
 	{ title: "Final words and wrap up:", time: "9:00" },
 ]
 
@@ -1175,7 +1178,7 @@ let Schedule = (function() {
 			display: "grid",
 		},
 
-		["h1", { "padding": rem(1.5), "pointer-events": "none" }],
+		["h1", { "padding": rem(3.5), "pointer-events": "none" }],
 		[".break", {
 			"padding": rem(1),
 			"font-size": em(1.2),
@@ -1188,42 +1191,62 @@ let Schedule = (function() {
 			"overflow-y": "scroll"
 		}],
 
+		[".title", {
+			"font-size": em(1.9),
+			"text-transform": "lowercase",
+			"font-family": "cirrus",
+			"background-color": colors.white
+		}],
+
+		[".time", {
+			"font-family": "oracle-simple",
+			"font-weight": "100",
+			display: "block-inline",
+			"font-size": em(1.3),
+			padding: [[rem(.2), rem(.5)]],
+			"width": "min-content",
+			"height": "min-content",
+			//"background-color": colors.highlight,
+			color: colors.highlight,
+			border: "1px solid " + colors.highlight,
+			"border-radius": px(50)
+		}],
+
+		[".speaker-container", {
+			display: "grid",
+			"grid-template-columns": [[percent(23), percent(77)]],
+		}],
+
+		[".info-container", {
+			"overflow": "hidden",
+			"height": 0,
+			"transition": "all 200ms"
+		}],
+
 		[".section", {
 			margin: [[0, rem(1.25)]],
 			padding: [[rem(.85), rem(.55), rem(1.5), rem(.55)]],
-			"padding-bottom": rem(1.25),
 			"font-weight": 600,
 			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
 			cursor: "pointer",
-			display: "grid",
-			"grid-template-columns": [[percent(23), percent(77)]]
+			transition: "all 200ms"
 		},
 			[":hover", {
-				"background-color": colors.highlight
+				transform: "scale(1.01)",
+				"box-shadow": [[0, 0, px(30), px(10), colors.black + "11"]],
 			}],
 
-			[".title", {
-				"font-size": em(1.9),
-				"text-transform": "lowercase",
-				"font-family": "cirrus",
-				"background-color": colors.white
+			[":hover .info-container", {
+				height: em(8)
 			}],
 
-			[".time", {
-				"font-family": "oracle-simple",
-				"font-weight": "100",
-				display: "block-inline",
-				"font-size": em(1.3),
-				padding: [[rem(.2), rem(.5)]],
-				"width": "min-content",
-				"height": "min-content",
-				//"background-color": colors.highlight,
-				color: colors.highlight,
-				border: "1px solid " + colors.highlight,
-				"border-radius": px(50)
-			}]
 		],
+
+		[".no-border", {
+			border: "none !important",
+			padding: [[rem(.35), rem(.35), rem(.75), rem(.35)]],
+		}],
 	]
 
 	//let { x, y } = offscreen()
@@ -1243,14 +1266,27 @@ let Schedule = (function() {
 				["h1", ""],
 				[".schedule-container",
 					...sections.map(e => {
+						if (e.time == "&") {
+							return [".section.no-border",
+								[".speaker-container",
+									{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
+									[".time", e.time],
+									[".title", e.title],
+								]]
+						}
 
 						if (e.time) {
 							return [".section",
-								{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
-								[".time", e.time],
-								[".title", e.title],
+								[".speaker-container",
+									{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
+									[".time", e.time],
+									[".title", e.title],
+								],
+								[".info-container", ["p", "please2ork"]]
+
 							]
 						}
+
 						else {
 							return [".break", e.title]
 						}
@@ -1740,7 +1776,7 @@ space.add(Title)
 space.add(schedule_child)
 
 const schedule_title = (() => {
-	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, 22, 10))
+	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10))
 	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
 	return schedule_title
 })()

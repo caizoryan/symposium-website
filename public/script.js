@@ -1046,7 +1046,7 @@ const Main = () => hdom([["style", () => css(style)], space.html, mobile_space.h
 /**@type RectangleDOM*/
 const About = (() => {
 	let { x, y } = offscreen()
-	let rectangle = new Rectangle(x, y, 25, 45, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 25, 55, { unit: "v", strategy: "absolute" })
 
 	let inlinecss = rectangle.css()
 

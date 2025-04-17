@@ -55,8 +55,19 @@ let sections = [
 		time: "4:00"
 	},
 	{ title: "Panel (1)", },
-	{ title: "Serena Peruzzo {1RG}", time: "4:30" },
-	{ title: "E.L guerrero", time: "4:50" },
+	{
+		title: "Serena Peruzzo {1RG}", time: "4:30",
+		links: [
+			["Website", "https://1RG.space"]
+		]
+	},
+	{
+		title: "E.L guerrero", time: "4:50",
+		links: [
+			["Website", "https://guerrero.ph"],
+			["Instagram", "https://www.instagram.com/thinkbulecount2"]
+		]
+	},
 	{ title: "Garry Ing", time: "5:10" },
 	{ title: "Discussion", time: "5:30" },
 
@@ -1282,8 +1293,9 @@ let Schedule = (function() {
 									[".time", e.time],
 									[".title", e.title],
 								],
-								[".info-container", ["p", "please2ork"]]
-
+								[".info-container",
+									//["p", "Info"]
+								]
 							]
 						}
 

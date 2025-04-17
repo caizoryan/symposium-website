@@ -6,7 +6,7 @@ import CSS from "./css/css.js"
 import * as Chowk from "./chowk/monke.js"
 const delay = fn => setTimeout(fn, 100)
 
-let reducedmotion = matchMedia("(prefers-reduced-motion)")
+let reducedmotion = matchMedia("(prefers-reduced-motion)").matches
 console.log(reducedmotion)
 
 delay(_ => console.log(`

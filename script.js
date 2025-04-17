@@ -358,6 +358,13 @@ function Navigator(rectangle) {
 	let destination = sig({ x: rectangle.x(), y: rectangle.y() })
 
 	const navigate_to = (x, y, inc, int) => {
+		if (reducedmotion) {
+			rectangle.x(x)
+			rectangle.y(y)
+			destination({ x, y })
+			return
+		}
+
 		// disabled on mobile
 		if (mobile()) return
 		timeline.clear()
@@ -711,6 +718,7 @@ let mobile_space = MobileSpace()
 // 2. animation
 // -----------------------
 function init_p5(el) {
+	if (reducedmotion) return
 	let p = new Q5('instance', el);
 
 	let r1 = p.width / 4;
@@ -1062,10 +1070,17 @@ const About = (() => {
 			"font-size": em(1.2),
 			top: em(1.2),
 			right: em(.5),
-		}, [":hover", {
-			"background-color": colors.highlight,
-			"color": colors.white,
-		}]],
+		},
+			[":hover", {
+				"background-color": colors.highlight,
+				"color": colors.white,
+			}],
+
+			[":focus", {
+				"background-color": colors.highlight,
+				"color": colors.white,
+			}]
+		],
 		["p.description", {
 			"pointer-events": "none",
 			"padding": em(1),
@@ -1226,7 +1241,7 @@ let Schedule = (function() {
 		}],
 
 		[".title", {
-			"font-size": em(1.9),
+			"font-size": em(1.8),
 			"text-transform": "lowercase",
 			"font-family": "cirrus",
 			"background-color": colors.white
@@ -1419,10 +1434,11 @@ let Timing = (function() {
 	})
 
 	let ref = rectangle.css()
-	let rotate = sig(3)
+	let rotate = sig(0)
 	let inlincecss = mem(() => ref() + `transform: rotate(${rotate()}deg)`)
 
 	let resetrotate = (i) => setTimeout(() => {
+		if (reducedmotion) { return }
 		rotate(offset(8));
 		resetrotate(Math.random() * 1500 + 1500)
 	}, i)
@@ -1592,7 +1608,10 @@ const domfromrectangle = (rect, atts = {}) => {
 	let ref = rect.css()
 	let off = sig(offset(365))
 
-	setInterval(() => {
+	let interval = setInterval(() => {
+		if (reducedmotion) clearInterval(interval)
+		if (reducedmotion) return
+
 		off(offset(185))
 	}, 2000 + Math.random() * 2000)
 
@@ -1646,6 +1665,7 @@ const maskcontainer = (first, second, rectangle, t = 500, dragEnable = false) =>
 	}
 
 	const _animate = () => {
+		if (reducedmotion) return
 		let direction = toss() ? -1 : 1
 		let axis = toss() ? "x" : "y"
 
@@ -1792,14 +1812,13 @@ function layer_two_shapes() {
 }
 layer_two_shapes()
 
-let banner_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x + dim.w + random(-1, 2), y: random(0, 35) })))
+let about_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x + dim.w + random(-1, 2), y: random(0, 35) })))
 
 Title.rectangle.add_child(child_timing)
-Schedule.rectangle.add_child(banner_child)
+Schedule.rectangle.add_child(about_child)
 
 //Title.rectangle.add_child(child_timing)
 //space.add(Schedule)
-space.add(banner_child)
 space.add(child_timing)
 
 
@@ -1844,6 +1863,7 @@ Title.rectangle.add_child(schedule_child)
 
 space.add(Title)
 space.add(schedule_child)
+space.add(about_child)
 
 const schedule_title = (() => {
 	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10), 500, true)
@@ -1859,7 +1879,7 @@ mobile_space.add(Title)
 mobile_space.add(child_timing)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 10)))
-mobile_space.add(banner_child)
+mobile_space.add(about_child)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 15)))
 mobile_space.add(schedule_title)

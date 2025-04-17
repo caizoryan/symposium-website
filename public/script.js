@@ -212,8 +212,8 @@ let shuffle = () => {
 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 	})
 
-	let w = Title.rectangle.w() + Schedule.rectangle.w() + About.rectangle.w() + 2
-	let pos = random_range([5, 100 - w], [0, 100 - Schedule.rectangle.h()])
+	let w = Title.rectangle.w() + Schedule.rectangle.w() + About.rectangle.w() + 3
+	let pos = random_range([5, 95 - w], [5, 95 - Schedule.rectangle.h()])
 	Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 }
 
@@ -1354,7 +1354,7 @@ let Schedule = (function() {
 							if (e.time == "&") tag = "article.no-border"
 							return [tag,
 								[".speaker-container",
-									{ onclick: shuffle, style: mem(() => mobile() ? "pointer-events: none" : "") },
+									{ onclick: shuffle, style: mem(() => mobile() ? "pointer-events: none" : ""), tabindex: 0 },
 									[".time", e.time],
 									[".title", e.title],
 								],
@@ -1469,10 +1469,11 @@ let Timing = (function() {
 		}))
 		return hdom(["section.timing",
 			{ style: inlincecss, ref: e => ref = e, },
-			["h2.date", { style: date_css }, "22 APRIL"],
-			["h4.time", { style: addy_css }, "4:00pm - 9:00pm"],
+			["h2.date", { style: date_css, tabindex: 0 }, "22 APRIL"],
+			["h4.time", { style: addy_css, tabindex: 0 }, "4:00pm - 9:00pm"],
 
 			[".addy-container",
+				{ tabindex: 0 },
 				["h2.address", "113 McCaul"],
 				["h2.address", "(Annex Building)"],
 				["h2.address", "MCC 512"],

@@ -58,9 +58,6 @@ export const drag = (elem, options = {}) => {
 		set_top(lastPosY);
 	}
 
-
-
-
 	function handle_pointerdown(e) {
 		let target = check_target_strict(e.target, e.currentTarget);
 		if (!target) return;

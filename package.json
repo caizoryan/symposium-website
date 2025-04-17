@@ -7,7 +7,7 @@
     "start": "npm run dev",
     "build": "node scripts/esbuild.prod.mjs",
     "dev": "node scripts/esbuild.dev.mjs -w",
-    "deploy": "git subtree push --prefix public origin gh-pages"
+    "deploy": "git subtree push --prefix public origin pages-real"
   },
   "dependencies": {
     "pixi.js": "^8.8.1"

@@ -1293,9 +1293,10 @@ let Schedule = (function() {
 									[".time", e.time],
 									[".title", e.title],
 								],
-								[".info-container",
-									//["p", "Info"]
-								]
+								e.links ?
+									[".info-container",
+										//["p", "Info"]
+									] : ""
 							]
 						}
 

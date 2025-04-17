@@ -1280,7 +1280,7 @@ let Schedule = (function() {
 			"overflow": "hidden",
 			"max-height": 0,
 			//visibility: "hidden",
-			"transition": "max-height 300ms"
+			"transition": "max-height 500ms"
 		}, [":focus-within", {
 			"max-height": vh(50),
 		}],

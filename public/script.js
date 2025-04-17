@@ -66,7 +66,9 @@ let sections = [
 		links: [
 			["Website", "https://guerrero.ph"],
 			["Instagram", "https://www.instagram.com/thinkbulecount2"]
-		]
+		],
+		bio: `E.L. Guerrero is a media and software artist working with identity, memory, and nostalgia in exploring alternative networks and infrastructures of care for being in a post-digital world. She is currently interning as an Accessibility Specialist at Rakuten Kobo.`
+
 	},
 	{
 		title: "Garry Ing", time: "5:10",
@@ -75,9 +77,13 @@ let sections = [
 	{ title: "Discussion", time: "5:30" },
 
 	{ title: "Panel (2)", },
-	{ title: "Skot Deeming", time: "6:10", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision /"]] },
+	{
+		title: "Skot Deeming", time: "6:10", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision /"]],
+		bio: `Skot Deeming is a pop culture obsessed maker, curator and scholar from Toronto, Canada. Working in limited run zines, handmade and painted toys, electronics and sculptures; Skot’s practice focuses on appropriating global IPs, characters, and pop culture detritus. He is currently in the final stages of his dissertation, which maps the Cultural Economies of character licensing, action figures, designer and bootleg toys.`
+	},
 	{
 		title: "Eric Francsico {Reflex Editions}", time: "6:30",
+		bio: `Eric Francisco is an artist-publisher and graphic designer whose research-driven practice synthesizes artists’ books, photography, printmaking, and writing to transform everyday situations and immediate landscapes into personal poetics. He co-runs Reflex Editions, a DIY publishing collective dedicated to exploring the collaborative and experimental possibilities of making handmade, small-edition publications and ephemera. `,
 		links: [["Instagram", "https://www.instagram.com/efrncsco_/"]]
 	},
 
@@ -98,6 +104,7 @@ let sections = [
 	},
 	{
 		title: "Jasmine Gui {Teh studio}", time: "&",
+		bio: `Jasmine Gui is a Singaporean-born interdisciplinary artist, arts programmer, and PhD based in Tkaronto. She works in paper, ceramics, tea and experimental book formats. She is a member of Dinky Dinks Studio, co-founder of TACLA and 1/4 of the quartet responsible for "a momo room” zine. `,
 		links: [
 			["Instagram", "https://www.instagram.com/jaziimun"],
 			["Website", "https://tehstudio.ca"]
@@ -210,7 +217,7 @@ let call_everyone = () => {
 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 	})
 
-	let w = Title.rectangle.w() + Schedule.rectangle.w() + Banner.rectangle.w() + 2
+	let w = Title.rectangle.w() + Schedule.rectangle.w() + About.rectangle.w() + 2
 	let pos = random_range([5, 100 - w], [0, 100 - Schedule.rectangle.h()])
 	Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 }
@@ -1084,7 +1091,7 @@ const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
 const Main = () => hdom([["style", () => css(style)], space.html, mobile_space.html])
 
 /**@type RectangleDOM*/
-const Banner = (() => {
+const About = (() => {
 	let { x, y } = offscreen()
 	let rectangle = new Rectangle(x, y, 25, 45, { unit: "v", strategy: "absolute" })
 
@@ -1266,6 +1273,13 @@ let Schedule = (function() {
 			"height": 0,
 			"transition": "all 200ms"
 		},
+			["p.bio", {
+				"font-weight": 500,
+				"font-family": "oracle-simple",
+				color: colors.black + "88",
+				"line-height": em(1.1),
+				"padding-bottom": em(.5)
+			}],
 			["a", {
 				"all": "unset",
 				"cursor": "pointer",
@@ -1291,7 +1305,8 @@ let Schedule = (function() {
 
 			[":hover .info-container", {
 				height: "auto",
-				"padding": rem(1),
+				//height: em(18),
+				"padding": rem(.5),
 			}],
 
 		],
@@ -1319,23 +1334,10 @@ let Schedule = (function() {
 				["h1", ""],
 				[".schedule-container",
 					...sections.map(e => {
-						if (e.time == "&") {
-							return [".section.no-border",
-								[".speaker-container",
-									{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
-									[".time", e.time],
-									[".title", e.title],
-								],
-
-								e.links ?
-									[".info-container",
-										...e.links.map((link) => ["p", ["a", { target: "_blank", href: link[1] }, link[0]]])
-									] : ""
-							]
-						}
-
 						if (e.time) {
-							return [".section",
+							let tag = ".section"
+							if (e.time == "&") tag = ".section.no-border"
+							return [tag,
 								[".speaker-container",
 									{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
 									[".time", e.time],
@@ -1343,8 +1345,10 @@ let Schedule = (function() {
 								],
 								e.links ?
 									[".info-container",
-										...e.links.map((link) => ["p", ["a", { target: "_blank", href: link[1] }, link[0]]])
-									] : ""
+										e.bio ? ["p.bio", e.bio] : "",
+										...e.links.map((link) => ["p", ["a", { target: "_blank", href: link[1] }, link[0]]]),
+									] : "",
+
 							]
 						}
 
@@ -1777,13 +1781,13 @@ space.add(Stage)
 function layer_two_shapes() {
 	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
 	shapes.forEach((e) => {
-		Banner.rectangle.add_child(e)
+		About.rectangle.add_child(e)
 		space.add(e)
 	})
 }
 layer_two_shapes()
 
-let banner_child = Child(Banner, follow_fn(Banner.rectangle, (dim) => ({ x: dim.x + dim.w + offset(2), y: random(0, 35) })))
+let banner_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x + dim.w + random(-1, 2), y: random(0, 35) })))
 
 Title.rectangle.add_child(child_timing)
 Schedule.rectangle.add_child(banner_child)

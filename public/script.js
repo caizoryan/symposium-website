@@ -60,17 +60,17 @@ const mouse_y = sig(0)
 let sections = [
 	{
 		title: "introduction",
-		time: "4:00"
+		time: "4:00pm"
 	},
 	{ title: "Panel (1)", },
 	{
-		title: "Serena Peruzzo {1RG}", time: "4:30",
+		title: "Serena Peruzzo {1RG}", time: "4:30pm",
 		links: [
 			["Website", "https://1RG.space"]
 		]
 	},
 	{
-		title: "E.L guerrero", time: "4:50",
+		title: "E.L guerrero", time: "4:50pm",
 		links: [
 			["Website", "https://guerrero.ph"],
 			["Instagram", "https://www.instagram.com/thinkbulecount2"]
@@ -79,35 +79,34 @@ let sections = [
 
 	},
 	{
-		title: "Garry Ing", time: "5:10",
+		title: "Garry Ing", time: "5:10pm",
 		links: [["Website", "https://garrying.com/"],]
 	},
-	{ title: "Discussion", time: "5:30" },
+	{ title: "Discussion", time: "5:30pm" },
 
 	{ title: "Panel (2)", },
 	{
-		title: "Skot Deeming", time: "6:10", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision"]],
+		title: "Skot Deeming", time: "6:10pm", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision"]],
 		bio: `Skot Deeming is a pop culture obsessed maker, curator and scholar from Toronto, Canada. Working in limited run zines, handmade and painted toys, electronics and sculptures; Skot’s practice focuses on appropriating global IPs, characters, and pop culture detritus. He is currently in the final stages of his dissertation, which maps the Cultural Economies of character licensing, action figures, designer and bootleg toys.`
 	},
 	{
-		title: "Eric Francsico {Reflex Editions}", time: "6:30",
+		title: "Eric Francsico {Reflex Editions}", time: "6:30pm",
 		bio: `Eric Francisco is an artist-publisher and graphic designer whose research-driven practice synthesizes artists’ books, photography, printmaking, and writing to transform everyday situations and immediate landscapes into personal poetics. He co-runs Reflex Editions, a DIY publishing collective dedicated to exploring the collaborative and experimental possibilities of making handmade, small-edition publications and ephemera. `,
 		links: [["Instagram", "https://www.instagram.com/efrncsco_/"]]
 	},
 
 
 	{
-		title: "Symon Oliver {Tennis Studio}", time: "6:50",
+		title: "Symon Oliver {Tennis Studio}", time: "6:50pm",
 		links: [
 			["Website", "https://www.designtennis.com/about"]
 		]
-
 	},
-	{ title: "Discussion", time: "7:10" },
+	{ title: "Discussion", time: "7:10pm" },
 
 	{ title: "Panel (3)", },
 	{
-		title: "Myfriends studio", time: "7:40",
+		title: "Myfriends studio", time: "7:40pm",
 		links: [["Instagram", "https://www.instagram.com/myfriends.studio/"]]
 	},
 	{
@@ -124,10 +123,10 @@ let sections = [
 			["Website", "https://sheeep.school/"]
 		]
 	},
-	{ title: "Discussion", time: "8:40" },
+	{ title: "Discussion", time: "8:40pm" },
 
 	{ title: "Wrap up", },
-	{ title: "Final words and wrap up:", time: "9:00" },
+	{ title: "Final words and wrap up:", time: "9:00pm" },
 ]
 
 // --------------------------
@@ -1181,7 +1180,7 @@ let Schedule = (function() {
 			"font-family": "oracle-simple",
 			"font-weight": "100",
 			display: "block-inline",
-			"font-size": em(1.3),
+			"font-size": em(1.2),
 			padding: [[rem(.2), rem(.5)]],
 			"width": "min-content",
 			"height": "min-content",
@@ -1193,7 +1192,7 @@ let Schedule = (function() {
 
 		[".speaker-container", {
 			display: "grid",
-			"grid-template-columns": [[percent(23), percent(77)]],
+			"grid-template-columns": [[percent(28), percent(72)]],
 		}],
 
 		[".info-container", {

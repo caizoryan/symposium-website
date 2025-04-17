@@ -1250,7 +1250,7 @@ let Schedule = (function() {
 			"overflow": "hidden",
 			"max-height": 0,
 			visibility: "hidden",
-			"transition": "max-height 300ms ease-in"
+			"transition": "max-height 300ms"
 		},
 			["p.bio", {
 				"font-weight": 500,

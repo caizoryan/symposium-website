@@ -1027,6 +1027,7 @@ const About = (() => {
 	let css = [".banner", {
 		padding: em(1),
 		cursor: "grab",
+		position: "relative",
 		background: colors.base,
 		"background-size": [[px(40), px(40)]],
 		"background-image": [
@@ -1037,6 +1038,27 @@ const About = (() => {
 		["h4", {
 			"pointer-events": "none",
 		}],
+
+		["h5", {
+			"font-family": "oracle-simple",
+			"margin-top": em(.5),
+			"font-size": em(1.2),
+			"font-weight": "600",
+			"text-transform": "uppercase",
+			"letter-spacing": em(.03)
+		}],
+		["button.switch", {
+			all: "unset",
+			cursor: "pointer",
+			"font-family": "cirrus",
+			position: "absolute",
+			"font-size": em(1.2),
+			top: em(1.2),
+			right: em(.5),
+		}, [":hover", {
+			"background-color": colors.highlight,
+			"color": colors.white,
+		}]],
 		["p.description", {
 			"pointer-events": "none",
 			"padding": em(1),
@@ -1048,21 +1070,49 @@ const About = (() => {
 		}]]
 
 
+	/**
+	 * @typedef {("about" | "colophon") } Section
+	 * @type {Chowk.Signal<Section>}
+	 * */
+	let section = sig("about")
+
 	let html = () => {
 		let ref
 		mounted(() => drag(ref, {
-			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
-			, enabled: () => !mobile()
+			set_left: (px) => rectangle.x(px_to_vw(px)),
+			set_top: (px) => rectangle.y(px_to_vh(px)),
+			enabled: () => !mobile()
 		}))
-		return hdom([".banner", { ref: e => ref = e, style: inlinecss },
+
+		let about = [
 			["h4", "About"],
+			["button.switch", { onclick: () => section("colophon") }, "(colophon)"],
+
 			["p.description", `
 			As art/design students envisioning a meaningful engagement with our practices (post-graduation) is either threatened by the hype of AI or is hijacked by scarcity of individual opportunities and the culture of self promotion.
 		`],
-
 			["p.description", `
 			This symposium hopes to bring to light the multitude of issues surrounding creative practices while reflecting on the ‘alternative’ modes of engaging with our practice, mutual care and pedagogy. At Alt-practices we aim to generate a connection between our locality in Toronto, with collectives/studios/individuals practicing alternatives, and the art/design students at OCAD. We invite you to join us, in a dialogue to see beyond the aspirations of “a successful career” and to envision novel forms of (alt) practices through an alliance with our locality and peers
 		`]
+		]
+
+		let colophon = [
+			["h4", "Colophon"],
+			["button.switch", { onclick: () => section("about") }, "(about)"],
+			["h5", "Type in use"],
+			["p.description", `
+The display typface is CirrusCumulus from Velvetyne Foundry designed by Clara Sambot. The monospace and sans-serif type on this
+website is the Oracle Family designed by the type foundry ABC Dinamo. 
+		`],
+
+			["h5", "Hosting"],
+			["p.description", `
+The website is hosted on Github Pages, on Microsoft's servers. This website is a physical being, hardware, memory;
+residing somewhere in a data center. We cannot track it's exact location but acknowledging it's physical existence somewhere on this planet is crucial. 
+		`]]
+
+		return hdom([".banner", { ref: e => ref = e, style: inlinecss },
+			mem(() => section() == "about" ? hdom(about) : hdom(colophon))
 		])
 	}
 

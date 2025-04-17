@@ -27,7 +27,8 @@ let px_to_vh = (px) => (px / window.innerHeight) * 100
 let windowwidth = sig(window.innerWidth)
 window.onresize = () => windowwidth(window.innerWidth)
 let scale = mem(() => windowwidth() > 1100 ? 1 : .75)
-let mobile = mem(() => windowwidth() < 900 ? true : false)
+let mobile = mem(() => windowwidth() < 1000 ? true : false)
+let tablet = mem(() => windowwidth() > 700 && mobile())
 
 const Easings = {
 	linear: (t) => t,
@@ -358,6 +359,7 @@ function Navigator(rectangle) {
 	let destination = sig({ x: rectangle.x(), y: rectangle.y() })
 
 	const navigate_to = (x, y, inc, int) => {
+		if (mobile()) return
 		if (reducedmotion) {
 			rectangle.x(x)
 			rectangle.y(y)
@@ -366,7 +368,6 @@ function Navigator(rectangle) {
 		}
 
 		// disabled on mobile
-		if (mobile()) return
 		timeline.clear()
 		destination({ x, y })
 
@@ -506,7 +507,11 @@ class Rectangle {
 			return css(rect(
 				this.x() + this.unit("x"),
 				this.y() + this.unit("y"),
-				mobile() ? "90vw" : this.w() + this.unit("w"),
+				mobile() ?
+					tablet()
+						? "75vw"
+						: "90vw"
+					: this.w() + this.unit("w"),
 				this.h() + this.unit("h"),
 				this.opts()
 			)) +
@@ -670,11 +675,16 @@ function MobileSpace() {
 		space_entities([...space_entities(), el,])
 	}
 
+	let wasTablet = false
+	eff_on(tablet, () => tablet() ? null : wasTablet ? activate() : null)
+
 	let activate = () => {
 		let total = 0
 		space_entities().forEach((el, i) => {
 			if (el.rectangle.navigator) el.rectangle.navigator.timeline.clear()
-			el.rectangle.x(random(0, 5))
+			if (tablet()) wasTablet = true
+			let upper = tablet() ? 15 : 3
+			el.rectangle.x(random(0, upper))
 			el.rectangle.y(total)
 			if (i == space_entities().length - 1) {
 				el.rectangle.opts({ ...el.rectangle.opts(), hUnit: "auto" })
@@ -1863,7 +1873,6 @@ Title.rectangle.add_child(schedule_child)
 
 space.add(Title)
 space.add(schedule_child)
-space.add(about_child)
 
 const schedule_title = (() => {
 	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10), 500, true)
@@ -1873,6 +1882,7 @@ const schedule_title = (() => {
 
 function mount_schedule_banner() { Schedule.rectangle.add_child(schedule_title), space.add(schedule_title) }
 mount_schedule_banner()
+space.add(about_child)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 5)))
 mobile_space.add(Title)

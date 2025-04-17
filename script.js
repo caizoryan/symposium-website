@@ -325,7 +325,6 @@ function Navigator(rectangle) {
 	const navigate_to = (x, y, inc, int) => {
 		// disabled on mobile
 		if (mobile()) return
-
 		timeline.clear()
 		destination({ x, y })
 
@@ -826,6 +825,7 @@ function init_p5(el) {
  *   currentValue: number,
  *   keyframes: Array<Keyframe>,
  *   destroy: () => void,
+ *   instant_destroy: () => void,
  *   animate: () => void,
  *   update: ClockCallback,
  *   add: (key: Keyframe) => PropInstance,
@@ -890,7 +890,12 @@ function Prop(clock, keyframes, setter) {
 			return api
 		},
 
-		destroy() { should_destroy = true; destroy() },
+		destroy() {
+			should_destroy = true;
+		},
+		instant_destroy() {
+			destroy()
+		},
 		animate() { api.active = true },
 		loop() { api.looping = true },
 		val() { return api.currentValue },

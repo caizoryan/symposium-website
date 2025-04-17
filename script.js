@@ -1237,7 +1237,13 @@ let Schedule = (function() {
 			display: "grid",
 		},
 
-		["h2", { "padding": rem(3.5), "pointer-events": "none" }],
+		[".schedule-title", {
+			"padding": rem(1),
+			"pointer-events": "none",
+			"font-family": "cirrus",
+			"font-weight": 100,
+			"font-size": em(3)
+		}],
 		[".break", {
 			"padding": rem(1),
 			"font-size": em(1.2),
@@ -1334,7 +1340,7 @@ let Schedule = (function() {
 
 	//let { x, y } = offscreen()
 	let { x, y } = random_pos(30, 60)
-	let rectangle = new Rectangle(x, y, 30, 70, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 30, 75, { unit: "v", strategy: "absolute" })
 	let inlincecss = rectangle.css()
 
 	const html = () => {
@@ -1346,7 +1352,7 @@ let Schedule = (function() {
 
 		return hdom(
 			["section.schedule", { style: inlincecss, ref: e => ref = e },
-				["h2", ""],
+				[".schedule-title", "Schedule"],
 				[".schedule-container",
 					...sections.map(e => {
 						if (e.time) {

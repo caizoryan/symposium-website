@@ -276,7 +276,7 @@ let style = mut([
 		}]),
 
 
-	[".main", {
+	["main", {
 		position: "fixed",
 		background: colors.white,
 		"background-size": [[px(100), px(100)]],
@@ -627,7 +627,7 @@ function Space(style_ref) {
 	}
 
 	const space_dom = mem(() =>
-		hdom([".main",
+		hdom(["main",
 			//{ onclick: call_everyone },
 			{ style: mem(() => "display:" + (hiding() ? "none" : "block")) },
 			...space_entities().map(e => e.html)
@@ -681,7 +681,7 @@ function MobileSpace() {
 	const space_dom = mem(() =>
 		hdom([".container",
 			{ style: mem(() => "display:" + (hiding() ? "none" : "block") + `;overflow-y: scroll; overflow-x: hidden;   position:relative; height:100vh`) },
-			[".main",
+			["main",
 				//{ onclick: call_everyone },
 				{ style: () => `; height: ${space_entities().reduce((acc, el) => acc + el.rectangle.h(), 155)}vh;position: relative;` },
 				...space_entities().map(e => e.html)
@@ -1102,17 +1102,16 @@ const About = (() => {
 			["button.switch", { onclick: () => section("about") }, "(about)"],
 			["h5", "Type in use"],
 			["p.description", `
-The display typface is CirrusCumulus from Velvetyne Foundry designed by Clara Sambot. The monospace and sans-serif type on this
-website is the Oracle Family designed by the type foundry ABC Dinamo. 
+	The display typface is CirrusCumulus from Velvetyne Foundry designed by Clara Sambot. The monospace and sans-serif type on this
+	website is the Oracle Family designed by the type foundry ABC Dinamo. 
 		`],
 
 			["h5", "Hosting"],
 			["p.description", `
-The website is hosted on Github Pages, on Microsoft's servers. This website is a physical being, hardware, memory;
-residing somewhere in a gigantic Equinix / Digital Reality's data center. We cannot track it's exact location but acknowledging it's physical existence somewhere on this planet is crucial. 
+	The website is hosted on Github Pages, on Microsoft's servers. This website is a physical being, hardware, memory; residing somewhere in a gigantic Equinix / Digital Reality's data center. We cannot track it's exact location but acknowledging it's physical existence somewhere on this planet is crucial. 
 		`]]
 
-		return hdom([".banner", { ref: e => ref = e, style: inlinecss },
+		return hdom(["section.banner", { ref: e => ref = e, style: inlinecss },
 			mem(() => section() == "about" ? hdom(about) : hdom(colophon))
 		])
 	}
@@ -1170,8 +1169,8 @@ const Dumplicate = (() => {
 
 	let style = rectangle.css()
 
-	const html = [".resources", { style: style }]
-	const css = [".resources",]
+	const html = ["graphic", { style: style }]
+	const css = []
 
 	return { css, html, rectangle }
 })()
@@ -1188,8 +1187,8 @@ const DumplicateSmall = (() => {
 
 	let style = rectangle.css()
 
-	const html = [".resources", { style: style }]
-	const css = [".resources",]
+	const html = ["graphic", { style: style }]
+	const css = []
 
 	return { css, html, rectangle }
 })()
@@ -1207,7 +1206,7 @@ let Schedule = (function() {
 			display: "grid",
 		},
 
-		["h1", { "padding": rem(3.5), "pointer-events": "none" }],
+		["h2", { "padding": rem(3.5), "pointer-events": "none" }],
 		[".break", {
 			"padding": rem(1),
 			"font-size": em(1.2),
@@ -1268,7 +1267,7 @@ let Schedule = (function() {
 			}, [":hover", { "background-color": colors.highlight, color: colors.white }]
 			]],
 
-		[".section", {
+		["article", {
 			margin: [[0, rem(1.25)]],
 			padding: [[rem(.85), rem(.55), rem(1.5), rem(.55)]],
 			"font-weight": 600,
@@ -1310,13 +1309,13 @@ let Schedule = (function() {
 		}))
 
 		return hdom(
-			[".schedule", { style: inlincecss, ref: e => ref = e },
-				["h1", ""],
+			["section.schedule", { style: inlincecss, ref: e => ref = e },
+				["h2", ""],
 				[".schedule-container",
 					...sections.map(e => {
 						if (e.time) {
-							let tag = ".section"
-							if (e.time == "&") tag = ".section.no-border"
+							let tag = "article"
+							if (e.time == "&") tag = "article.no-border"
 							return [tag,
 								[".speaker-container",
 									{ onclick: shuffle, style: mem(() => mobile() ? "pointer-events: none" : "") },
@@ -1431,7 +1430,7 @@ let Timing = (function() {
 			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
 			, enabled: () => !mobile()
 		}))
-		return hdom([".timing",
+		return hdom(["section.timing",
 			{ style: inlincecss, ref: e => ref = e, },
 			["h2.date", { style: date_css }, "22 APRIL"],
 			["h4.time", { style: addy_css }, "4:00pm - 9:00pm"],
@@ -1708,7 +1707,7 @@ let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "abso
  * @param {Rectangle} rectangle
  * @returns {RectangleDOM}
  * */
-let container = (rectangle, ...doms) => {
+let container = (rectangle, tag = ".container", ...doms) => {
 	let style = rectangle.css()
 	let inline = () => style() + ";cursor: grab;"
 
@@ -1718,14 +1717,14 @@ let container = (rectangle, ...doms) => {
 			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
 			, enabled: () => !mobile()
 		}))
-		return hdom([".container", { ref: e => ref = e, style: inline }, ...doms.map(e => e.html)])
+		return hdom([tag, { ref: e => ref = e, style: inline }, ...doms.map(e => e.html)])
 	}
 
 	let css = [...doms.map(e => e.css)]
 	return { html, css, rectangle }
 }
 
-let Title = container(new Rectangle(0, 0, 25, 30, { strategy: "absolute" }), Alternative, Practices, Symposium)
+let Title = container(new Rectangle(0, 0, 25, 30, { strategy: "absolute" }), "header", Alternative, Practices, Symposium)
 
 // x-------------------x
 // Shape creator
@@ -1772,8 +1771,6 @@ space.add(Information)
 space.add(Dumplicate)
 space.add(DumplicateSmall)
 space.add(Stage)
-//space.add(Banner)
-//space.add(Timing)
 
 function layer_two_shapes() {
 	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
@@ -1857,6 +1854,7 @@ mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 15)))
 mobile_space.add(schedule_title)
 mobile_space.add(schedule_child)
 
+document.body.innerHTML = ""
 render(Main, document.body)
 
 //----------------------------

@@ -1249,7 +1249,7 @@ let Schedule = (function() {
 		[".info-container", {
 			"overflow": "hidden",
 			"max-height": 0,
-			visibility: "hidden",
+			//visibility: "hidden",
 			"transition": "max-height 300ms"
 		},
 			["p.bio", {

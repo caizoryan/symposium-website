@@ -4,17 +4,19 @@ import { Q5 } from "./q5/q5.js"
 import { drag } from "./drag.js"
 import CSS from "./css/css.js"
 import * as Chowk from "./chowk/monke.js"
+const delay = fn => setTimeout(fn, 100)
 
-console.log(`
+delay(_ => console.log(`
 x----------------x
 Hello dear lurker,
 x----------------x
 
 This website will be in perpetual development till the 22nd of April 2025, do come back to see updates.
-The code is documented with some comments and resources. 
+The code is documented with some comments and resources. Feel free to go into the source and check script.js
+That's where all the magic is!
 
 More information about the structure of the code can be found at https://github.com/caizoryan/symposium-website
-`)
+`))
 
 let px_to_vw = (px) => (px / window.innerWidth) * 100
 let px_to_vh = (px) => (px / window.innerHeight) * 100
@@ -1042,10 +1044,9 @@ const About = (() => {
 		["h5", {
 			"font-family": "oracle-simple",
 			"margin-top": em(.5),
-			"font-size": em(1.2),
-			"font-weight": "600",
+			"font-size": em(1),
+			"font-weight": "500",
 			"text-transform": "uppercase",
-			"letter-spacing": em(.03)
 		}],
 		["button.switch", {
 			all: "unset",
@@ -1247,8 +1248,9 @@ let Schedule = (function() {
 
 		[".info-container", {
 			"overflow": "hidden",
-			"height": 0,
-			"transition": "all 200ms"
+			"max-height": 0,
+			visibility: "hidden",
+			"transition": "max-height 300ms ease-in"
 		},
 			["p.bio", {
 				"font-weight": 500,
@@ -1281,7 +1283,8 @@ let Schedule = (function() {
 			}],
 
 			[":hover .info-container", {
-				height: "auto",
+				"max-height": "50vh",
+				visibility: "visible",
 				//height: em(18),
 				"padding": rem(.5),
 			}],

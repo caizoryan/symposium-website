@@ -5,14 +5,22 @@ import { drag } from "./drag.js"
 import CSS from "./css/css.js"
 import * as Chowk from "./chowk/monke.js"
 
+console.log(`
+x----------------x
+Hello dear lurker,
+x----------------x
+
+This website will be in perpetual development till the 22nd of April 2025, do come back to see updates.
+The code is documented with some comments and resources. 
+
+More information about the structure of the code can be found at https://github.com/caizoryan/symposium-website
+`)
+
 let px_to_vw = (px) => (px / window.innerWidth) * 100
 let px_to_vh = (px) => (px / window.innerHeight) * 100
 
 let windowwidth = sig(window.innerWidth)
-window.onresize = () => {
-	windowwidth(window.innerWidth)
-	console.log("resize", windowwidth())
-}
+window.onresize = () => windowwidth(window.innerWidth)
 let scale = mem(() => windowwidth() > 1100 ? 1 : .75)
 let mobile = mem(() => windowwidth() < 900 ? true : false)
 
@@ -46,7 +54,7 @@ const mouse_x = sig(0)
 const mouse_y = sig(0)
 
 // x---------------------------
-// schedule:
+// Data: Speakers
 // x---------------------------
 
 let sections = [
@@ -128,31 +136,13 @@ let sections = [
 // Note: This sourcecode takes 
 // the form of a game engine
 //
-// It manages a entities (Rectangles),
-// existing on a plane. 
+// It manages a entities (Rectangles), existing on a plane. 
 //
-// Rectangles have children, 
-// and children are related to
-// their parents in certain ways:
+// Rectangles have children, and children are related to
+// their parents through a follow function that returns anchors:
 // top-left, top-right, etc
 //
-// when parents move, children follow
-// when layour changes, parents move
-// when interaction, parents change, children change
-//
-// All the rectangles are choreographed to form
-// various compositions.
-//
-// Compositions reveals something, like the schedule
-// or information about the speaker or symposium
-// or resources like pdfs
-//
-// and certan compositions unlock secret walls
-// of communication.
-//
-// Graphics alter between on approach to another
-// Graphics rotate, spin, change and mingle.
-// --------------------------
+// All the rectangles are choreographed to form various compositions.
 
 // ------------------------------
 // *Header: CSS
@@ -209,7 +199,7 @@ const offscreen = () => {
 	return { x: fx, y: fy }
 }
 
-let call_everyone = () => {
+let shuffle = () => {
 	comps.forEach((el) => {
 		let pos = random_pos(
 			el.rectangle.w(),
@@ -235,6 +225,7 @@ let call_everyone = () => {
  *	strategy?: ("fixed" | "absolute")
  * }} opts
  * 
+ * Takes in x, y, w, h, with opts and returns formatted obj to be used in CSS.css
  * */
 const rect = (x, y, w, h, opts = {
 	xAxis: "left",
@@ -301,14 +292,16 @@ let style = mut([
 //
 // 1. #Navigator;
 // 2. #Rectangle;
-// 3. #Squad;
-// 4. #Space;
+// 3. #Child;
+// 4. #Clock;
+// 5. #Space;
+// 6. #MobileSpace;
 // ------------------
 
-// -----------------------
-// gets ref to Rectangle
-// ----------------------
 
+// x----------------------x
+// #Navigator;
+// x----------------------x
 /**
  * @typedef {{
  *	navigate_to : (x: number, y: number, increment?: number, interval?: number) => void
@@ -420,31 +413,11 @@ function Navigator(rectangle) {
 	return { navigate_to, destination, timeline }
 }
 
-/**
- * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%" | "auto")} Unit
- * @typedef {{
- *   color?: string,
- *   opacity?: string,
- *   background?: string,
- *   "background-image"?: string,
- *   "background-size"?: string,
- *   "background-position"?: string,
- *   css: () => string
- * }} Material
- * @typedef {{
- *   xAxis?: ("left" | "right"),
- *   unit?: Unit,
- *   yAxis?: ("top" | "bottom"),
- *   strategy?: ("fixed" | "absolute"),
- *   wUnit?: Unit,
- *   hUnit?: Unit,
- *   xUnit?: Unit,
- *   yUnit?: Unit,
- *   material?: Material
- * }} RectangleOpts
- */
-class Rectangle {
 
+// x----------------------x
+// #Rectangle;
+// x----------------------x
+class Rectangle {
 	/**
 	 * @param {number} x 
 	 * @param {number} y 
@@ -530,6 +503,9 @@ class Rectangle {
 	}
 }
 
+// x----------------------x
+// #Child;
+// x----------------------x
 /**
  * @typedef {{x: number, y: number, w: number, h: number}} Bounding
  * @param {RectangleDOM} element
@@ -545,22 +521,9 @@ function Child(element, followfn) {
 	return { html, css, rectangle, follow }
 }
 
-// -----------------------
-// #Squad;
-// ----
-// A squad is a grouping of a parent element, i.e a Rectangle
-// with it's children. Children can be other Rectangles or 
-// more squads. 
-//
-// Squad concept -> manages the movement of its memebers.
-// When parents move due to any reason, the squad makes sure to inform the children
-// so they can follow them around.
-// -----------------------
-
-function Squad(parent, children) { }
-
-// ----------------------
+// x----------------------x
 // #Clock;
+// x----------------------x
 //
 // can't do without time.
 // all game components ask the clock for elapsed time
@@ -576,28 +539,8 @@ function Squad(parent, children) { }
 // ```
 //
 // ----------------------
-/**
- * @typedef {( time:{
- *	stamp: number,
- *	start: number,
- *	delta: number,
- *	elapsed: number,
- *	last: number,
- *	destroy: () => void
- * }) => void} ClockCallback
- *
- * @typedef {{
- *	start: number,
- *	elapsed: Chowk.Signal<number>,
- *	last: Chowk.Signal<number>,
- *	add: (fn: ClockCallback) => Function
- *	pause: () => void,
- *	play: () => void,
- *	paused: boolean
- * }} Clock
- *
- * @returns {Clock}
- * */
+
+/** @returns {Clock} */
 function Clock() {
 	/**@type {ClockCallback[]}*/
 	const callbacks = []
@@ -642,24 +585,23 @@ function Clock() {
 	return i
 }
 
-let clock = Clock()
 
-// ------------------------
+// x----------------------x
 // #Space;
+// x----------------------x
+//
 // For any of these entities, to exist
 // they require a container, a conception of something to be in.
 //
 // Space, provides this concept. 
 // You can be (added) to a space
-// Once added you can't be removed, even when you're lifetime is over,
-// there will be a trace of you in this space.
+// Once added you can't be removed
 //
 // Space needs to be negotiated, sometimes its members will be required to compromise
 // for the sake of each other. In this case its important that the members can communicate
 // to each other their needs and capacities.
 //
-// If you are in a space, you're bounded by its (time), 
-// and its (constraints)
+// If you are in a space, you're bounded by its (time), and its (constraints)
 // ------------------------
 function Space(style_ref) {
 	///**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
@@ -698,8 +640,10 @@ function Space(style_ref) {
 	}
 }
 
-let space = Space(style)
 
+// x----------------------x
+// #MobileSpace;
+// x----------------------x
 function MobileSpace() {
 	//
 	/**@type {Chowk.Signal<(RectangleDOM | RectangleDOMChild)[]>}*/
@@ -727,7 +671,6 @@ function MobileSpace() {
 	}
 
 	const hiding = sig(true)
-	eff_on(hiding, () => console.log("mobile set as", hiding()))
 	const hide = () => hiding(true)
 	const show = () => {
 		activate()
@@ -751,24 +694,9 @@ function MobileSpace() {
 	}
 }
 
+let clock = Clock()
+let space = Space(style)
 let mobile_space = MobileSpace()
-
-/**
- * @typedef {{
- *	html: any,
- *	css: any,
- *	rectangle: Rectangle
- * }} RectangleDOM
- * */
-
-/**
- * @typedef {{
- *	html: any,
- *	css: any,
- *	rectangle: Rectangle,
- *	follow: (bounding: Bounding) => void
- * }} RectangleDOMChild
- * */
 
 // -----------------------
 // *Header: Graphics
@@ -1339,7 +1267,7 @@ let Schedule = (function() {
 							if (e.time == "&") tag = ".section.no-border"
 							return [tag,
 								[".speaker-container",
-									{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
+									{ onclick: shuffle, style: mem(() => mobile() ? "pointer-events: none" : "") },
 									[".time", e.time],
 									[".title", e.title],
 								],
@@ -1497,7 +1425,7 @@ let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
 
 
 const Stage = (() => {
-	const html = () => hdom([".canvas", { ref: init_p5, onclick: call_everyone }])
+	const html = () => hdom([".canvas", { ref: init_p5, onclick: shuffle }])
 	const css = [".canvas", { cursor: "pointer", position: "fixed", "mix-blend-mode": "difference" }, fullscreen]
 	return { html, css }
 })()
@@ -1636,7 +1564,7 @@ let imagematerial = (src) => ({
  * @param {Rectangle} rectangle 
  * @returns {RectangleDOM}
  * */
-const maskcontainer = (first, second, rectangle, t = 500) => {
+const maskcontainer = (first, second, rectangle, t = 500, dragEnable = false) => {
 	const runreset = (el) => {
 		el.rectangle.x(0)
 		el.rectangle.y(0)
@@ -1687,11 +1615,18 @@ const maskcontainer = (first, second, rectangle, t = 500) => {
 	const render = e => e.html()
 
 	const html = () => {
-		return hdom([".masked", { style: inlinecss }, () => each(ordered, render)])
+		let ref
+
+		mounted(() => dragEnable ? drag(ref, {
+			set_left: (px) => rectangle.x(px_to_vw(px)),
+			set_top: (px) => rectangle.y(px_to_vh(px)),
+			enabled: () => !mobile()
+		}) : null)
+
+		return hdom([".masked", { ref: e => ref = e, style: inlinecss }, () => each(ordered, render)])
 	}
 
 	onanimationend()
-
 	return { html, css: [".masked", { style: CSS.css({ position: "relative", "pointer-events": "none" }) }, first.css, second.css], rectangle }
 }
 
@@ -1702,9 +1637,19 @@ let emptycolor = (color = colors.white) => ({
 	})
 })
 
-let Alternative = Dual("Alternative", new Rectangle(0, 0, 25, 10, { strategy: "absolute" }), undefined, 750)
-let Practices = Dual("Practices", new Rectangle(0, 10, 25, 10, { strategy: "absolute" }), undefined, 500)
-let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "absolute" }), [emptycolor(colors.white), white_grid], 650)
+/**@returns {Material}*/
+let rotatematerial = (i) => {
+	let siggy = mem(() => ((mouse_x() / window.innerWidth * 2) - 1) * (i * 2))
+	let f = {
+		css: () => `transform: translateX(${i * 5}px) rotate(${siggy()}deg);`
+	}
+
+	return f
+}
+
+let Alternative = Dual("Alternative", new Rectangle(0, 0, 25, 10, { strategy: "absolute", material: rotatematerial(-2) }), undefined, 750)
+let Practices = Dual("Practices", new Rectangle(0, 10, 25, 10, { strategy: "absolute", material: rotatematerial(-1) }), undefined, 500)
+let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "absolute", material: rotatematerial(3) }), [emptycolor(colors.white), white_grid], 650)
 
 /**
  * @param {RectangleDOM[]} doms
@@ -1740,7 +1685,7 @@ const shape = (src, fn) => {
 		material: imagematerial(src)
 	})
 
-	let domdom = domfromrectangle(rectangle, { onclick: call_everyone })
+	let domdom = domfromrectangle(rectangle, { onclick: shuffle })
 	fn = fn ? fn(rectangle) : follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
 
 	return Child(domdom, fn)
@@ -1841,7 +1786,7 @@ space.add(Title)
 space.add(schedule_child)
 
 const schedule_title = (() => {
-	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10))
+	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10), 500, true)
 	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
 	return schedule_title
 })()
@@ -1867,7 +1812,7 @@ render(Main, document.body)
 //----------------------------
 /**@type {RectangleDOM[]}*/
 let comps = [Information, Dumplicate, DumplicateSmall]
-call_everyone()
+shuffle()
 
 // //
 // setInterval(() => {
@@ -1897,3 +1842,65 @@ eff_on(mobile, () => {
 	}
 
 })
+
+// x------------------------x
+// ------------------------
+// #Types;
+// ------------------------
+// x------------------------x
+
+/**
+ * @typedef {("px" | "vh" | "vw" | "v" | "em" | "%" | "auto")} Unit
+ * @typedef {{
+ *   color?: string,
+ *   opacity?: string,
+ *   background?: string,
+ *   "background-image"?: string,
+ *   "background-size"?: string,
+ *   "background-position"?: string,
+ *   css: () => string
+ * }} Material
+ * @typedef {{
+ *   xAxis?: ("left" | "right"),
+ *   unit?: Unit,
+ *   yAxis?: ("top" | "bottom"),
+ *   strategy?: ("fixed" | "absolute"),
+ *   wUnit?: Unit,
+ *   hUnit?: Unit,
+ *   xUnit?: Unit,
+ *   yUnit?: Unit,
+ *   material?: Material
+ * }} RectangleOpts
+ *
+ * @typedef {( time:{
+ *	stamp: number,
+ *	start: number,
+ *	delta: number,
+ *	elapsed: number,
+ *	last: number,
+ *	destroy: () => void
+ * }) => void} ClockCallback
+ *
+ * @typedef {{
+ *	start: number,
+ *	elapsed: Chowk.Signal<number>,
+ *	last: Chowk.Signal<number>,
+ *	add: (fn: ClockCallback) => Function
+ *	pause: () => void,
+ *	play: () => void,
+ *	paused: boolean
+ * }} Clock
+ *
+ * @typedef {{
+ *	html: any,
+ *	css: any,
+ *	rectangle: Rectangle
+ * }} RectangleDOM
+ *
+ * @typedef {{
+ *	html: any,
+ *	css: any,
+ *	rectangle: Rectangle,
+ *	follow: (bounding: Bounding) => void
+ * }} RectangleDOMChild
+ */

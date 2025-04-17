@@ -86,7 +86,7 @@ let sections = [
 
 	{ title: "Panel (2)", },
 	{
-		title: "Skot Deeming", time: "6:10", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision /"]],
+		title: "Skot Deeming", time: "6:10", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision"]],
 		bio: `Skot Deeming is a pop culture obsessed maker, curator and scholar from Toronto, Canada. Working in limited run zines, handmade and painted toys, electronics and sculptures; Skot’s practice focuses on appropriating global IPs, characters, and pop culture detritus. He is currently in the final stages of his dissertation, which maps the Cultural Economies of character licensing, action figures, designer and bootleg toys.`
 	},
 	{

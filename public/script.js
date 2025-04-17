@@ -1733,7 +1733,7 @@ let emptycolor = (color = colors.white) => ({
 let rotatematerial = (i) => {
 	let siggy = mem(() => ((mouse_x() / window.innerWidth * 2) - 1) * (i * 2))
 	let f = {
-		css: () => `transform: translateX(${i * 5}px) rotate(${siggy()}deg);`
+		css: () => mobile() ? "" : `transform: translateX(${i * 5}px) rotate(${siggy()}deg);`
 	}
 
 	return f

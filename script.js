@@ -7,7 +7,7 @@ import * as Chowk from "./chowk/monke.js"
 const delay = fn => setTimeout(fn, 100)
 
 let reducedmotion = matchMedia("(prefers-reduced-motion)").matches
-console.log(reducedmotion)
+console.log("reduced motion enabled:", reducedmotion)
 
 delay(_ => console.log(`
 x----------------x
@@ -1118,7 +1118,7 @@ const About = (() => {
 
 		let about = [
 			["h4", "About"],
-			["button.switch", { onclick: () => section("colophon") }, "(colophon)"],
+			["button.switch", { title: "Show colophon page", onclick: () => section("colophon") }, "(colophon)"],
 
 			["p.description", `
 			As art/design students envisioning a meaningful engagement with our practices (post-graduation) is either threatened by the hype of AI or is hijacked by scarcity of individual opportunities and the culture of self promotion.
@@ -1130,7 +1130,7 @@ const About = (() => {
 
 		let colophon = [
 			["h4", "Colophon"],
-			["button.switch", { onclick: () => section("about") }, "(about)"],
+			["button.switch", { title: "Show about page", onclick: () => section("about") }, "(about)"],
 			["h5", "Type in use"],
 			["p.description", `
 	The display typface is CirrusCumulus from Velvetyne Foundry designed by Clara Sambot. The monospace and sans-serif type on this
@@ -1265,21 +1265,22 @@ let Schedule = (function() {
 
 		[".time", {
 			"font-family": "oracle-simple",
-			"font-weight": "100",
+			"font-weight": "300",
 			display: "block-inline",
-			"font-size": em(1.2),
-			padding: [[rem(.2), rem(.5)]],
+			"font-size": em(1),
+			"margin-bottom": em(.5),
+			padding: [[rem(.15), rem(.35)]],
 			"width": "min-content",
 			"height": "min-content",
 			//"background-color": colors.highlight,
-			color: colors.highlight,
-			border: "1px solid " + colors.highlight,
+			color: colors.highlight + "dd",
+			"border": "1px solid " + colors.highlight + "dd",
 			"border-radius": px(50)
 		}],
 
 		[".speaker-container", {
 			display: "grid",
-			"grid-template-columns": [[percent(28), percent(72)]],
+			"grid-template-rows": [[percent(28), percent(72)]],
 		}],
 
 		[".info-container", {
@@ -1311,7 +1312,7 @@ let Schedule = (function() {
 
 		["article", {
 			margin: [[0, rem(1.25)]],
-			padding: [[rem(.85), rem(.55), rem(1.5), rem(.55)]],
+			padding: [[rem(.85), rem(.35), rem(2.5), rem(.35)]],
 			"font-weight": 600,
 			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
@@ -1837,40 +1838,6 @@ Schedule.rectangle.add_child(about_child)
 //Title.rectangle.add_child(child_timing)
 //space.add(Schedule)
 space.add(child_timing)
-
-
-// -----------------------
-// (u) COMPONENT: Button
-// -----------------------
-let button = (click_fn, one, two) => {
-	let atts = { onclick: click_fn }
-	let text = two
-
-	if (typeof one == "object") Object.assign(atts, one)
-	else if (typeof one == "string") text = one
-
-	return ["button", atts, text]
-}
-
-// -----------------------
-// (u) COMPONENT: label number input
-// -----------------------
-function label_number_input(label, getter, setter) {
-	return [
-		".label-input",
-		["span.label", label],
-		() => hdom(["input", {
-			value: getter,
-			type: "number",
-			oninput: (e) => {
-				let value = parseInt(e.target.value)
-				if (isNaN(value)) value = 0
-				setter(value)
-			}
-		}])
-	]
-}
-
 
 //Schedule.rectangle.add_child(TitleChild)
 let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle,

@@ -1108,7 +1108,7 @@ website is the Oracle Family designed by the type foundry ABC Dinamo.
 			["h5", "Hosting"],
 			["p.description", `
 The website is hosted on Github Pages, on Microsoft's servers. This website is a physical being, hardware, memory;
-residing somewhere in a data center. We cannot track it's exact location but acknowledging it's physical existence somewhere on this planet is crucial. 
+residing somewhere in a gigantic Equinix / Digital Reality's data center. We cannot track it's exact location but acknowledging it's physical existence somewhere on this planet is crucial. 
 		`]]
 
 		return hdom([".banner", { ref: e => ref = e, style: inlinecss },

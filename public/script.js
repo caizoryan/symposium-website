@@ -6,6 +6,9 @@ import CSS from "./css/css.js"
 import * as Chowk from "./chowk/monke.js"
 const delay = fn => setTimeout(fn, 100)
 
+let reducedmotion = matchMedia("(prefers-reduced-motion)")
+console.log(reducedmotion)
+
 delay(_ => console.log(`
 x----------------x
 Hello dear lurker,
@@ -275,6 +278,9 @@ let style = mut([
 			"font-size": em(4 - (i / 2))
 		}]),
 
+	["section:focus-within", {
+		"box-shadow": [[0, 0, px(30), px(10), colors.black + "88"]],
+	}],
 
 	["main", {
 		position: "fixed",
@@ -1250,7 +1256,9 @@ let Schedule = (function() {
 			"max-height": 0,
 			//visibility: "hidden",
 			"transition": "max-height 300ms"
-		},
+		}, [":focus-within", {
+			"max-height": vh(50),
+		}],
 			["p.bio", {
 				"font-weight": 500,
 				"font-family": "oracle-simple",
@@ -1259,12 +1267,15 @@ let Schedule = (function() {
 				"padding-bottom": em(.5)
 			}],
 			["a", {
-				"all": "unset",
+				"text-decoration": "none",
+				"color": colors.highlight,
 				"cursor": "pointer",
 				"font-weight": 300,
 				"font-size": em(1.2),
 				"font-family": "oracle",
-			}, [":hover", { "background-color": colors.highlight, color: colors.white }]
+			},
+				[":hover", { "background-color": colors.highlight, color: colors.white }],
+				[":focus", { "background-color": colors.highlight, color: colors.white }]
 			]],
 
 		["article", {

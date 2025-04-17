@@ -68,19 +68,47 @@ let sections = [
 			["Instagram", "https://www.instagram.com/thinkbulecount2"]
 		]
 	},
-	{ title: "Garry Ing", time: "5:10" },
+	{
+		title: "Garry Ing", time: "5:10",
+		links: [["Website", "https://garrying.com/"],]
+	},
 	{ title: "Discussion", time: "5:30" },
 
 	{ title: "Panel (2)", },
-	{ title: "Skot Deeming", time: "6:10" },
-	{ title: "Eric Francsico {Reflex Editions}", time: "6:30" },
-	{ title: "Symon Oliver {Tennis Studio}", time: "6:50" },
+	{ title: "Skot Deeming", time: "6:10", links: [["Instagram", "https://www.instagram.com/yoyodynetoydivision /"]] },
+	{
+		title: "Eric Francsico {Reflex Editions}", time: "6:30",
+		links: [["Instagram", "https://www.instagram.com/efrncsco_/"]]
+	},
+
+
+	{
+		title: "Symon Oliver {Tennis Studio}", time: "6:50",
+		links: [
+			["Website", "https://www.designtennis.com/about"]
+		]
+
+	},
 	{ title: "Discussion", time: "7:10" },
 
 	{ title: "Panel (3)", },
-	{ title: "Myfriends studio", time: "7:40" },
-	{ title: "Jasmine Gui {Teh studio}", time: "&" },
-	{ title: "Sheep school ", time: "&" },
+	{
+		title: "Myfriends studio", time: "7:40",
+		links: [["Instagram", "https://www.instagram.com/myfriends.studio/"]]
+	},
+	{
+		title: "Jasmine Gui {Teh studio}", time: "&",
+		links: [
+			["Instagram", "https://www.instagram.com/jaziimun"],
+			["Website", "https://tehstudio.ca"]
+		]
+	},
+	{
+		title: "Sheep school ", time: "&",
+		links: [
+			["Website", "https://sheeep.school/"]
+		]
+	},
 	{ title: "Discussion", time: "8:40" },
 
 	{ title: "Wrap up", },
@@ -1237,7 +1265,15 @@ let Schedule = (function() {
 			"overflow": "hidden",
 			"height": 0,
 			"transition": "all 200ms"
-		}],
+		},
+			["a", {
+				"all": "unset",
+				"cursor": "pointer",
+				"font-weight": 300,
+				"font-size": em(1.2),
+				"font-family": "oracle",
+			}, [":hover", { "background-color": colors.highlight, color: colors.white }]
+			]],
 
 		[".section", {
 			margin: [[0, rem(1.25)]],
@@ -1254,7 +1290,8 @@ let Schedule = (function() {
 			}],
 
 			[":hover .info-container", {
-				height: em(8)
+				height: "auto",
+				"padding": rem(1),
 			}],
 
 		],
@@ -1267,7 +1304,7 @@ let Schedule = (function() {
 
 	//let { x, y } = offscreen()
 	let { x, y } = random_pos(30, 60)
-	let rectangle = new Rectangle(x, y, 30, 60, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 30, 70, { unit: "v", strategy: "absolute" })
 	let inlincecss = rectangle.css()
 
 	const html = () => {
@@ -1288,7 +1325,13 @@ let Schedule = (function() {
 									{ onclick: call_everyone, style: mem(() => mobile() ? "pointer-events: none" : "") },
 									[".time", e.time],
 									[".title", e.title],
-								]]
+								],
+
+								e.links ?
+									[".info-container",
+										...e.links.map((link) => ["p", ["a", { target: "_blank", href: link[1] }, link[0]]])
+									] : ""
+							]
 						}
 
 						if (e.time) {
@@ -1300,7 +1343,7 @@ let Schedule = (function() {
 								],
 								e.links ?
 									[".info-container",
-										//["p", "Info"]
+										...e.links.map((link) => ["p", ["a", { target: "_blank", href: link[1] }, link[0]]])
 									] : ""
 							]
 						}
@@ -1450,8 +1493,8 @@ let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
 
 
 const Stage = (() => {
-	const html = () => hdom([".canvas", { ref: init_p5 }])
-	const css = [".canvas", { position: "fixed", "mix-blend-mode": "difference" }, fullscreen]
+	const html = () => hdom([".canvas", { ref: init_p5, onclick: call_everyone }])
+	const css = [".canvas", { cursor: "pointer", position: "fixed", "mix-blend-mode": "difference" }, fullscreen]
 	return { html, css }
 })()
 

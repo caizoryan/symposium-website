@@ -1282,7 +1282,7 @@ let Schedule = (function() {
 
 		[".speaker-container", {
 			display: "grid",
-			"grid-template-rows": "1fr 3fr",
+			"grid-template-rows": "3em 6em",
 		}],
 
 		[".info-container", {
@@ -1864,7 +1864,7 @@ mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 5)))
 mobile_space.add(Title)
 mobile_space.add(child_timing)
 
-mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 10)))
+mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 35)))
 mobile_space.add(about_child)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 15)))

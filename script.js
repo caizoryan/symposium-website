@@ -1047,7 +1047,9 @@ const Main = () => hdom([["style", () => css(style)], space.html, mobile_space.h
 
 /**@type RectangleDOM*/
 const About = (() => {
-	let { x, y } = offscreen()
+	//let { x, y } = offscreen()
+	let x = 50
+	let y = -55
 	let rectangle = new Rectangle(x, y, 25, 55, { unit: "v", strategy: "absolute" })
 
 	let inlinecss = rectangle.css()
@@ -1566,7 +1568,7 @@ function follow_fn(rectangle, anchor) {
 	return function(dims) {
 		setTimeout(() => {
 			let pos = anchor(dims)
-			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
+			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 16, 250)
 
 			let jumpy = () => {
 				let tl = rectangle.navigator.timeline
@@ -1576,7 +1578,7 @@ function follow_fn(rectangle, anchor) {
 
 			actual()
 			//toss() ? jumpy() : actual()
-		}, 700)
+		}, 300)
 	}
 }
 

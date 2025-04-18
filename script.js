@@ -1271,7 +1271,7 @@ let Schedule = (function() {
 			display: "block-inline",
 			"font-size": em(1),
 			"margin-bottom": em(.5),
-			padding: [[rem(.15), rem(.35)]],
+			padding: [[rem(.35), rem(.35)]],
 			"width": "min-content",
 			"height": "min-content",
 			//"background-color": colors.highlight,
@@ -1281,8 +1281,8 @@ let Schedule = (function() {
 		}],
 
 		[".speaker-container", {
-			display: "grid",
-			"grid-template-rows": "3em 6em",
+			// display: "grid",
+			// "grid-template-rows": "3em 6em",
 		}],
 
 		[".info-container", {
@@ -1343,7 +1343,7 @@ let Schedule = (function() {
 
 	//let { x, y } = offscreen()
 	let { x, y } = random_pos(30, 60)
-	let rectangle = new Rectangle(x, y, 30, 75, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 30, 80, { unit: "v", strategy: "absolute" })
 	let inlincecss = rectangle.css()
 
 	const html = () => {

@@ -1248,7 +1248,8 @@ let Schedule = (function() {
 		}],
 		[".break", {
 			"padding": rem(1),
-			"font-size": em(1.2),
+			"font-weight": 200,
+			"font-size": em(1.9),
 			"pointer-events": "none",
 			"font-family": "oracle"
 		}],
@@ -1837,16 +1838,12 @@ let about_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x +
 Title.rectangle.add_child(child_timing)
 Schedule.rectangle.add_child(about_child)
 
-//Title.rectangle.add_child(child_timing)
-//space.add(Schedule)
 space.add(child_timing)
 
 //Schedule.rectangle.add_child(TitleChild)
-let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle,
-	(dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
+let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle, (dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
+
 Title.rectangle.add_child(schedule_child)
-
-
 space.add(Title)
 space.add(schedule_child)
 
@@ -1881,21 +1878,6 @@ render(Main, document.body)
 let comps = [Information, Dumplicate, DumplicateSmall]
 shuffle()
 
-// //
-// setInterval(() => {
-// 	out = !out
-// 	comps.forEach((el) => {
-// 		let pos
-// 		if (out) {
-// 			pos = offscreen()
-// 		} else {
-// 			pos = random_pos(
-// 				el.rectangle.w(),
-// 				el.rectangle.h())
-// 		}
-// 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 25, 350)
-// 	})
-// }, 15000)
 
 eff_on(mobile, () => {
 	if (mobile()) {
@@ -1907,7 +1889,6 @@ eff_on(mobile, () => {
 		space.show()
 		mobile_space.hide()
 	}
-
 })
 
 // x------------------------x

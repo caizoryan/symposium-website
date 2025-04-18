@@ -113,7 +113,8 @@ let sections = [
 
 	{ title: "Panel (3)", },
 	{
-		title: "Myfriends studio", time: "7:40pm",
+		title: "Yiu Hei {Myfriends studio}", time: "7:40pm",
+		bio: "My Friends Studio is a community driven tattoo studio and event space that aims to foster connection between underrepresented multidisciplinary artists and those who seek exposure to creativity. Yiu Hei Cheung is one of four co-founders of My Friends Studio. He is an artist exploring the crafts of photography, tattooing, and sewing, and has a varied range of professional experiences spanning the fields of architecture, graphic design, and media production.",
 		links: [["Instagram", "https://www.instagram.com/myfriends.studio/"]]
 	},
 	{
@@ -125,7 +126,7 @@ let sections = [
 		]
 	},
 	{
-		title: "Sheep school ", time: "&",
+		title: "Nam Hoang {Sheep school}", time: "&",
 		links: [
 			["Website", "https://sheeep.school/"]
 		]

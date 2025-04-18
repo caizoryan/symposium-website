@@ -1262,7 +1262,7 @@ let Schedule = (function() {
 			"font-size": em(1.8),
 			"text-transform": "lowercase",
 			"font-family": "cirrus",
-			"background-color": colors.white
+			//"background-color": colors.white
 		}],
 
 		[".time", {
@@ -1282,7 +1282,7 @@ let Schedule = (function() {
 
 		[".speaker-container", {
 			display: "grid",
-			"grid-template-rows": [[percent(28), percent(72)]],
+			"grid-template-rows": "1fr 3fr",
 		}],
 
 		[".info-container", {

@@ -71,6 +71,7 @@ let sections = [
 	{ title: "Panel (1)", },
 	{
 		title: "Serena Peruzzo {1RG}", time: "4:30pm",
+		bio: "Serena is a technologist and entrepreneur based in Toronto. She co-founded 1RG, a co-working space for humanist technologists and a consulting lab for public interest technology. Having worked in tech for over a decade, Serena is driven by a profound belief that technology can and should empower people. She is dedicated to creating spaces and solutions that support human agency, nurture curiosity, and foster innovative approaches to social challenges.",
 		links: [
 			["Website", "https://1RG.space"]
 		]
@@ -86,6 +87,7 @@ let sections = [
 	},
 	{
 		title: "Garry Ing", time: "5:10pm",
+		bio: "Garry Ing is a designer and researcher centred around web technologies and net-based practices. He's a co-organizer of Our Networks and A-B-Z-TXT.",
 		links: [["Website", "https://garrying.com/"],]
 	},
 	{ title: "Discussion", time: "5:30pm" },
@@ -104,6 +106,7 @@ let sections = [
 
 	{
 		title: "Symon Oliver {Tennis Studio}", time: "6:50pm",
+		bio: "Symon Oliver is a founder and Design Director at Tennis, a digital agency that transforms complex challenges into accessible, scalable, and user-centred solutions. With over a decade of experience in UX design, digital strategy, and organizational transformation, Symon helps lead Tennis’ process-driven approach to delivering measurable impact. Through its HOLO Methodology, Tennis partners with businesses, nonprofits, and startups to drive growth, streamline operations, and create meaningful digital experiences.",
 		links: [
 			["Website", "https://www.designtennis.com/about"]
 		]
@@ -267,7 +270,6 @@ let style = mut([
 	["*", {
 		padding: 0,
 		margin: 0,
-		transition: [["all", ms(20)]],
 	}],
 
 	// -----------------
@@ -1289,7 +1291,7 @@ let Schedule = (function() {
 			//visibility: "hidden",
 			"transition": "max-height 500ms"
 		}, [":focus-within", {
-			"max-height": vh(50),
+			"max-height": vh(30),
 		}],
 			["p.bio", {
 				"font-weight": 500,

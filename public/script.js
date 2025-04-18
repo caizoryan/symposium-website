@@ -107,9 +107,7 @@ let sections = [
 	{
 		title: "Symon Oliver {Tennis Studio}", time: "6:50pm",
 		bio: "Symon Oliver is a founder and Design Director at Tennis, a digital agency that transforms complex challenges into accessible, scalable, and user-centred solutions. With over a decade of experience in UX design, digital strategy, and organizational transformation, Symon helps lead Tennis’ process-driven approach to delivering measurable impact. Through its HOLO Methodology, Tennis partners with businesses, nonprofits, and startups to drive growth, streamline operations, and create meaningful digital experiences.",
-		links: [
-			["Website", "https://www.designtennis.com/about"]
-		]
+		links: [["Website", "https://www.designtennis.com/about"]]
 	},
 	{ title: "Discussion", time: "7:10pm" },
 
@@ -1293,7 +1291,7 @@ let Schedule = (function() {
 			//visibility: "hidden",
 			"transition": "max-height 500ms"
 		}, [":focus-within", {
-			"max-height": vh(30),
+			"max-height": vh(100),
 		}],
 			["p.bio", {
 				"font-weight": 500,
@@ -1329,7 +1327,7 @@ let Schedule = (function() {
 			}],
 
 			[":hover .info-container", {
-				"max-height": "50vh",
+				"max-height": "80vh",
 				visibility: "visible",
 				//height: em(18),
 				"padding": rem(.5),
@@ -1345,7 +1343,7 @@ let Schedule = (function() {
 
 	//let { x, y } = offscreen()
 	let { x, y } = random_pos(30, 60)
-	let rectangle = new Rectangle(x, y, 30, 80, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 30, 85, { unit: "v", strategy: "absolute" })
 	let inlincecss = rectangle.css()
 
 	const html = () => {

@@ -1568,7 +1568,7 @@ function follow_fn(rectangle, anchor) {
 	return function(dims) {
 		setTimeout(() => {
 			let pos = anchor(dims)
-			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 16, 250)
+			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
 
 			let jumpy = () => {
 				let tl = rectangle.navigator.timeline
@@ -1652,8 +1652,6 @@ let imagematerial = (src) => ({
 		"cursor": "pointer",
 	})
 })
-
-
 
 // x-------------------x
 // Mask container

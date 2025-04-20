@@ -7,7 +7,6 @@ export const drag = (elem, options = {}) => {
 	const set_top = options.set_top ? options.set_top : (top) => { elem.style.top = top + "px"; };
 	const enabled = options.enabled ? options.enabled : () => true
 	const onend = options.onend ? options.onend : null
-	console.log("onened", onend)
 
 	// For panning (translate)
 	let lastPosX, lastPosY;					// Needed because of decimals 

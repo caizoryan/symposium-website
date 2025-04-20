@@ -254,7 +254,6 @@ let shuffle = () => {
 		}
 	})
 
-	console.log(positions)
 
 	// shuffle_options for next time
 	// multiple for good measure...
@@ -308,14 +307,14 @@ const loadfont = (src, name) => {
 // *Header: CSS Definition
 // ------------------
 let style = mut([
-	loadfont("./fonts/Roberte-Regular.woff", "roberte"),
 	loadfont("./fonts/Oracle.ttf", "oracle"),
 	loadfont("./fonts/Oracle_simple.ttf", "oracle-simple"),
-	loadfont("./fonts/Anthony.otf", "anthony"),
-	loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
 	loadfont("./fonts/CirrusCumulus.otf", "cirrus"),
 	loadfont("./fonts/Rajdhani-Light.ttf", "rajdhani"),
-	loadfont("./fonts/DuctusCalligraphic.otf", "ductus"),
+	// loadfont("./fonts/Roberte-Regular.woff", "roberte"),
+	// loadfont("./fonts/Anthony.otf", "anthony"),
+	// loadfont("./fonts/TINY5x3GX.ttf", "tiny"),
+	// loadfont("./fonts/DuctusCalligraphic.otf", "ductus"),
 
 	["*", {
 		padding: 0,

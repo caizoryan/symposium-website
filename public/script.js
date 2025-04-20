@@ -26,7 +26,7 @@ let px_to_vh = (px) => (px / window.innerHeight) * 100
 
 let windowwidth = sig(window.innerWidth)
 window.onresize = () => windowwidth(window.innerWidth)
-let scale = mem(() => windowwidth() > 1100 ? 1 : .75)
+let scale = mem(() => windowwidth() > 1150 ? 1 : .75)
 let mobile = mem(() => windowwidth() < 1000 ? true : false)
 let tablet = mem(() => windowwidth() > 700 && mobile())
 
@@ -206,17 +206,68 @@ const offscreen = () => {
 	return { x: fx, y: fy }
 }
 
+/**@typedef {("title" | "schedule" | "about")} ComponentOptions
+ * @type {ComponentOptions[]}
+ * */
+let options = [`title`, 'schedule', 'about']
 let shuffle = () => {
-	comps.forEach((el) => {
+	graphics.forEach((el) => {
 		let pos = random_pos(
 			el.rectangle.w(),
 			el.rectangle.h())
 		el.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 	})
 
-	let w = Title.rectangle.w() + Schedule.rectangle.w() + About.rectangle.w() + 3
-	let pos = random_range([5, 95 - w], [5, 95 - Schedule.rectangle.h()])
-	Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
+	/**@type {{x: number, y: number, w: number}[]}*/
+	let positions = []
+
+	// 
+	options.forEach((el, index) => {
+		let last_index = positions.length - 1
+		let first = last_index == -1
+		let last_end = first
+			? 0
+			: (positions[last_index].x + positions[last_index].w)
+
+		let padding = first ? random(4, 8) : random(-2, 0)
+
+
+		if (el == "title") {
+			let w = Title.rectangle.w()
+			let pos = random_range([last_end + 7, last_end + 5 + padding], [5, 95 - (Title.rectangle.h() + child_timing.rectangle.h())])
+			positions.push({ x: pos.x, y: pos.y, w })
+			Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
+		}
+
+		else if (el == "schedule") {
+			let w = Schedule.rectangle.w()
+			let pos = random_range([last_end, last_end + padding], [5, 95 - Schedule.rectangle.h()])
+			positions.push({ x: pos.x, y: pos.y, w })
+			Schedule.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
+		}
+
+		else if (el == "about") {
+			let w = About.rectangle.w()
+			let pos = random_range([last_end, last_end + padding], [5, 95 - About.rectangle.h()])
+			positions.push({ x: pos.x, y: pos.y, w })
+			About.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
+		}
+	})
+
+	console.log(positions)
+
+	// shuffle_options for next time
+	// multiple for good measure...
+	let done = () => {
+		let s_index = options.findIndex(e => e == "schedule")
+		if (s_index == 0) return true
+		if (options[s_index - 1] != "about") return true
+		else return false
+	}
+
+	do {
+		options.sort((_) => Math.random() > .5 ? 1 : -1)
+	} while (!done())
 }
 
 
@@ -1058,6 +1109,7 @@ const About = (() => {
 		cursor: "grab",
 		position: "relative",
 		background: colors.base,
+		"overflow-y": "scroll",
 		"background-size": [[px(40), px(40)]],
 		"background-image": [
 			"linear-gradient(to right, #2222 1px, transparent 1px)",
@@ -1832,19 +1884,12 @@ function layer_two_shapes() {
 }
 layer_two_shapes()
 
-let about_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x + dim.w + random(-1, 2), y: random(0, 35) })))
+//let about_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x + dim.w + random(-1, 2), y: random(0, 35) })))
 
-Title.rectangle.add_child(child_timing)
-Schedule.rectangle.add_child(about_child)
 
-space.add(child_timing)
 
 //Schedule.rectangle.add_child(TitleChild)
-let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle, (dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
-
-Title.rectangle.add_child(schedule_child)
-space.add(Title)
-space.add(schedule_child)
+//let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle, (dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
 
 const schedule_title = (() => {
 	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10), 500, true)
@@ -1852,20 +1897,29 @@ const schedule_title = (() => {
 	return schedule_title
 })()
 
-function mount_schedule_banner() { Schedule.rectangle.add_child(schedule_title), space.add(schedule_title) }
-mount_schedule_banner()
-space.add(about_child)
+Title.rectangle.add_child(child_timing)
+Schedule.rectangle.add_child(schedule_title)
+
+space.add(Title)
+space.add(Schedule)
+space.add(schedule_title)
+space.add(About)
+space.add(child_timing)
+//space.add(schedule_child)
+
+//space.add(about_child)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 5)))
 mobile_space.add(Title)
 mobile_space.add(child_timing)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 35)))
-mobile_space.add(about_child)
+mobile_space.add(About)
 
 mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 15)))
 mobile_space.add(schedule_title)
-mobile_space.add(schedule_child)
+mobile_space.add(Schedule)
+//mobile_space.add(schedule_child)
 
 document.body.innerHTML = ""
 render(Main, document.body)
@@ -1874,7 +1928,7 @@ render(Main, document.body)
 // TEMP
 //----------------------------
 /**@type {RectangleDOM[]}*/
-let comps = [Information, Dumplicate, DumplicateSmall]
+let graphics = [Information, Dumplicate, DumplicateSmall]
 shuffle()
 
 

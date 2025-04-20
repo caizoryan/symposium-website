@@ -234,7 +234,7 @@ let shuffle = () => {
 
 		if (el == "title") {
 			let w = Title.rectangle.w()
-			let pos = random_range([last_end + 7, last_end + 5 + padding], [5, 95 - (Title.rectangle.h() + child_timing.rectangle.h())])
+			let pos = random_range([last_end + 7, last_end + 5 + padding], [5, 95 - (Title.rectangle.h() + TimingChild.rectangle.h())])
 			positions.push({ x: pos.x, y: pos.y, w })
 			Title.rectangle.navigator.navigate_to(pos.x, pos.y, 30, 800)
 		}
@@ -268,8 +268,6 @@ let shuffle = () => {
 		options.sort((_) => Math.random() > .5 ? 1 : -1)
 	} while (!done())
 }
-
-
 
 /**
  * @param {string} x 
@@ -776,106 +774,84 @@ let clock = Clock()
 let space = Space(style)
 let mobile_space = MobileSpace()
 
-// -----------------------
-// *Header: Graphics
-// 1. p5  
-// 2. animation
-// -----------------------
-function init_p5(el) {
-	if (reducedmotion) return
-	let p = new Q5('instance', el);
+// x-------------------x
+// #Base::Utilities;
+// x-------------------x
+/**
+ * @param {(bounds: Bounding) => ({x: number, y: number})} anchor 
+ * @param {Rectangle} rectangle
+ **/
+function follow_fn(rectangle, anchor) {
+	return function(dims) {
+		setTimeout(() => {
+			let pos = anchor(dims)
+			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
 
-	let r1 = p.width / 4;
-	let r2 = p.height / 4;
-	let text1 = "अलगpractices"
-	let textc = "#9366C5";
-	let e1font, e2font, e3font
-	p.setup = () => {
-		p.createCanvas(window.innerWidth, window.innerHeight, { alpha: true });
-		p.angleMode(p.DEGREES);
-	};
+			let jumpy = () => {
+				let tl = rectangle.navigator.timeline
+				tl.clear()
+				tl.add(animate.prop(jump(rectangle.y(), actual), rectangle.y))
+			}
 
-	p.preload = () => {
-		e1font = p.loadFont("./fonts/Rajdhani-Light.ttf");
-		e2font = p.loadFont("./fonts/Rajdhani-Light.ttf");
-		e3font = p.loadFont("./fonts/DuctusCalligraphic.otf");
-	}
-
-	let an = 0
-	function draw_character(angle, char) {
-		p.textSize(40);
-		p.noStroke();
-		p.textAlign(p.CENTER, p.CENTER);
-
-		let x = p.cos(angle) * r1;
-		let y = p.sin(angle) * r2;
-
-		p.rectMode(p.CENTER);
-		//rotation for each point
-		let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
-		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 2;
-
-		if (angle > 80) p.textFont(e2font);
-		else p.textFont(e1font)
-
-		p.stroke(colors.black);
-		p.noFill()
-		p.circle(x1, y1, 60)
-
-		p.fill(colors.black)
-		p.noStroke()
-		p.text(char, x1, y1);
-	}
-
-	p.draw = () => {
-		p.clear()
-		an = p.lerp(an, (mouse_y() * mouse_x()) / 300, 0.001)
-		p.stroke(255);
-		p.noFill();
-
-		text1.split("").forEach((char, i) => {
-			let angle = 360 / text1.length * i
-			draw_character(angle, char)
-		})
-
-
-		let rw = p.width / 4 - p.width / 12
-		let ry = p.height / 4 - p.height / 12
-
-		r1 = rw + p.cos(90 - an) * p.width / 10;
-		r2 = ry + p.sin(90 - an) * p.height / 10;
+			actual()
+			//toss() ? jumpy() : actual()
+		}, 300)
 	}
 }
 
+// x-------------------x
+// Follow fns
+// x-------------------x
+let tl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
+let tr = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + offset(2) }))
+let br = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + dims.h + offset(2) }))
+let bl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + dims.h + offset(2) }))
+
+let randomizer = (rectangle) => {
+	let opts = [tl, tr, br, bl]
+	let active = opts.map(e => e(rectangle))
+
+	return (dims) => active[Math.floor(Math.random() * active.length)](dims)
+}
+
+// x-------------------x
+// Dom from Rectangle
+// x-------------------x
 /**
- * @typedef {{
- *  start: number,
- *  end: number,
- *  duration: number,
- *  easing?: string,
- *	onend?: () => void 
- *	onstart?: () => void 
- *	onupdate?: () => void 
- *	ondestroy?: (reason: string) => void 
- * }} Keyframe
- *
- * @typedef {{
- *   active: boolean,
- *   looping: boolean,
- *   elapsedTime: number,
- *   activeMotion: number,
- *   currentValue: number,
- *   keyframes: Array<Keyframe>,
- *   destroy: () => void,
- *   instant_destroy: () => void,
- *   animate: () => void,
- *   update: ClockCallback,
- *   add: (key: Keyframe) => PropInstance,
- *   loop: () => void,
- *   val: () => number,
- *   setEasing: (easing: string) => PropInstance,
- * }} PropInstance
- *
+ * @param {Rectangle} rect
+ * @returns {RectangleDOM}
+ * */
+const domfromrectangle = (rect, atts = {}) => {
+	let css = ""
+	let ref = rect.css()
+	let off = sig(offset(365))
+
+	let interval = setInterval(() => {
+		if (reducedmotion) clearInterval(interval)
+		if (reducedmotion) return
+
+		off(offset(185))
+	}, 2000 + Math.random() * 2000)
+
+	let inlinecss = () => ref() + `;transform: rotate(${off()}deg);transition: transform 200ms`
+	let html = () => hdom(["div", { style: inlinecss, ...atts }])
+	return { html, css, rectangle: rect }
+}
+
+
+//
+// -----------------------
+// *Header: Animation
+// 1. #Prop;
+// 2. #Timeline;
+// 3. #Animator;
+// -----------------------
+
+
+// x--------------------x
+// 1. #Prop;
+// x--------------------x
+/**
  * @param {Clock} clock 
  * @param {Keyframe[]} keyframes
  * @param {(val:number) => void} setter 
@@ -992,16 +968,10 @@ function Prop(clock, keyframes, setter) {
 	return api
 }
 
+// x--------------------x
+// 1. #Timeline;
+// x--------------------x
 /**
- * @typedef {{
- *   add: (prop: PropInstance) => TimelineInstance,
- *   loop: () => TimelineInstance,
- *   animate: () => TimelineInstance,
- *   setEasing: (easing: string) => TimelineInstance,
- *   pause: () => TimelineInstance,
- *   clear: () => void,
- * }} TimelineInstance
- *
  * @returns {TimelineInstance}
  */
 function Timeline() {
@@ -1039,63 +1009,174 @@ function Timeline() {
 	return api;
 }
 
+// x--------------------x
+// 1. #Animator;
+// x--------------------x
+/**@param {Clock} clock*/
 function Animator(clock) {
 	/**@param {Keyframe[]} keyframes*/
 	const prop = (keyframes, setter) => Prop(clock, keyframes, setter)
 	return { prop }
 }
 
+
+// x-------------------x
+// #Animation::Utilities;
+// x-------------------x
+/**@returns {Keyframe[]}*/
+const jump = (initial, then) => {
+	let top = initial - 5
+	return [
+		{ start: initial, end: top, duration: 350, easing: "OutCubic" },
+		{ start: top, end: top - .5, duration: 150, easing: "OutCubic" },
+		{ start: top - .5, end: initial - .5, duration: 150, easing: "InCubic" },
+		{ start: initial - .5, end: initial, duration: 350, easing: "InCubic", onend: then },
+	]
+}
+
+const offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
 const animate = Animator(clock)
 
-/**
- * @param {Rectangle} rectangle
- * @param {{x: number, y: number}} pos
- * @param {number=} inc
- * @param {number=} t
- * @param {any=} timeout
- * */
-const seek_rect = (pos, rectangle, inc = 8, t = 300, timeout) => {
-	if (timeout) clearTimeout(timeout)
-	let diff_x = rectangle.x() - pos.x
-	let diff_y = rectangle.y() - pos.y
+// -----------------------
+// *Header: Graphics
+// 1. #P5;  
+// -----------------------
+function init_p5(el) {
+	if (reducedmotion) return
+	let p = new Q5('instance', el);
 
-	let new_x = rectangle.x() + (rectangle.x() < pos.x ? inc : inc * -1)
-	let new_y = rectangle.y() + (rectangle.y() < pos.y ? inc : inc * -1)
+	let r1 = p.width / 4;
+	let r2 = p.height / 4;
+	let text1 = "अलगpractices"
+	let textc = "#9366C5";
+	let e1font, e2font, e3font
+	p.setup = () => {
+		p.createCanvas(window.innerWidth, window.innerHeight, { alpha: true });
+		p.angleMode(p.DEGREES);
+	};
 
-	let need_update_x = Math.abs(diff_x) > inc
-	let need_update_y = Math.abs(diff_y) > inc
-
-	let onend = () => seek_rect(pos, rectangle, inc, t, timeout)
-	let update_fn_x = () => {
-		let start = rectangle.x()
-		let end = new_x
-
-		animate.prop([{ start, end, duration: t + 50, onend }], rectangle.x).setEasing("OutQuart")
+	p.preload = () => {
+		e1font = p.loadFont("./fonts/Rajdhani-Light.ttf");
+		e2font = p.loadFont("./fonts/Rajdhani-Light.ttf");
+		e3font = p.loadFont("./fonts/DuctusCalligraphic.otf");
 	}
 
-	let update_fn_y = () => {
-		let start = rectangle.y()
-		let end = new_y
+	let an = 0
+	function draw_character(angle, char) {
+		p.textSize(40);
+		p.noStroke();
+		p.textAlign(p.CENTER, p.CENTER);
 
-		animate
-			.prop([{ start, end, duration: t + 50, onend }], rectangle.y)
-			.setEasing("OutQuart")
+		let x = p.cos(angle) * r1;
+		let y = p.sin(angle) * r2;
+
+		p.rectMode(p.CENTER);
+		//rotation for each point
+		let x1 = x * p.cos(an) - y * p.sin(an) + p.width / 2;
+		let y1 = x * p.sin(an) + y * p.cos(an) + p.height / 2;
+
+		if (angle > 80) p.textFont(e2font);
+		else p.textFont(e1font)
+
+		p.stroke(colors.black);
+		p.noFill()
+		p.circle(x1, y1, 60)
+
+		p.fill(colors.black)
+		p.noStroke()
+		p.text(char, x1, y1);
 	}
 
-	let fns = []
-	if (need_update_x) fns.push(update_fn_x)
-	if (need_update_y) fns.push(update_fn_y)
+	p.draw = () => {
+		p.clear()
+		an = p.lerp(an, (mouse_y() * mouse_x()) / 300, 0.001)
+		p.stroke(255);
+		p.noFill();
 
-	timeout = setTimeout(() => {
-		const is = fns[Math.floor(Math.random() * fns.length)]
-		if (is) is()
-	}, t)
+		text1.split("").forEach((char, i) => {
+			let angle = 360 / text1.length * i
+			draw_character(angle, char)
+		})
+
+
+		let rw = p.width / 4 - p.width / 12
+		let ry = p.height / 4 - p.height / 12
+
+		r1 = rw + p.cos(90 - an) * p.width / 10;
+		r2 = ry + p.sin(90 - an) * p.height / 10;
+	}
 }
+
+/**@returns {Material}*/
+const imagematerial = (src) => ({
+	css: () => css({
+		background: "#fff0",
+		"background-image": url(src),
+		"background-size": "contain",
+		"background-repeat": "no-repeat",
+		"cursor": "col-resize",
+	})
+})
+
+/**@returns {Material}*/
+const emptycolor = (color = colors.white) => ({
+	css: () => CSS.css({
+		"background-color": color,
+	})
+})
+
+/**@returns {Material}*/
+const rotatematerial = (i) => {
+	let siggy = mem(() => ((mouse_x() / window.innerWidth * 2) - 1) * (i * 2))
+	let f = { css: () => mobile() ? "" : `transform: translateX(${i * 5}px) rotate(${siggy()}deg);` }
+	return f
+}
+
+
+const colored_grid = (color, grid_size = 40) => ({
+	css: () => CSS.css({
+		background: color,
+		"background-size": [[px(grid_size), px(grid_size)]],
+		"background-image": [
+			"linear-gradient(to right, #2222 1px, transparent 1px)",
+			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
+		]
+	})
+})
+
+/**@type {Material}*/
+const purple_grid = colored_grid(colors.highlight, 40)
+
+/**@type {Material}*/
+const white_grid = colored_grid(colors.white, 4)
 
 // -----------------------
 // *Header: COMPONENTs
 // -----------------------
 const Main = () => hdom([["style", () => css(style)], space.html, mobile_space.html])
+
+function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = 3.7) {
+	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
+	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
+
+	let fo = { style: mem(() => "font-family: " + font + ";font-size: " + em(size * scale()) + ";") }
+	let Alternative = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
+		return { html, css, rectangle }
+	})()
+
+	let Practices = (() => {
+		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[1] })
+		let inlinecss = rectangle.css()
+		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
+		return { html, css, rectangle }
+	})()
+
+	let dom = maskcontainer(Alternative, Practices, rectangle, time)
+	return dom
+}
 
 /**@type RectangleDOM*/
 const About = (() => {
@@ -1207,79 +1288,6 @@ const About = (() => {
 	return { html, css, rectangle }
 })()
 
-
-
-let colored_grid = (color, grid_size = 40) => ({
-	css: () => CSS.css({
-		background: color,
-		"background-size": [[px(grid_size), px(grid_size)]],
-		"background-image": [
-			"linear-gradient(to right, #2222 1px, transparent 1px)",
-			"linear-gradient(to bottom, #2222 1px, transparent 1px)",
-		]
-	})
-})
-
-/**@type {Material}*/
-let purple_grid = colored_grid(colors.highlight, 40)
-
-/**@type {Material}*/
-let white_grid = colored_grid(colors.white, 4)
-
-/**@type RectangleDOM*/
-const Information = (() => {
-	/**@type {Material}*/
-	let material = purple_grid
-	let { x, y } = offscreen()
-	let rectangle = new Rectangle(
-		x, y,
-		100 - 40 - 1, 60,
-		{ unit: "v", material, strategy: "absolute" }
-	)
-
-	let style = rectangle.css()
-
-	const html = [".resources", { style: style }]
-	const css = [".resources",]
-
-	return { css, html, rectangle }
-})()
-
-/**@type RectangleDOM*/
-const Dumplicate = (() => {
-	/**@type {Material}*/
-	let material = purple_grid
-	let { x, y } = offscreen()
-	let rectangle = new Rectangle(
-		x, y, 20, 25,
-		{ unit: "v", material }
-	)
-
-	let style = rectangle.css()
-
-	const html = ["graphic", { style: style }]
-	const css = []
-
-	return { css, html, rectangle }
-})()
-
-/**@type RectangleDOM*/
-const DumplicateSmall = (() => {
-	/**@type {Material}*/
-	let material = purple_grid
-	let { x, y } = offscreen()
-	let rectangle = new Rectangle(
-		x, y, 25, 18,
-		{ unit: "v", material }
-	)
-
-	let style = rectangle.css()
-
-	const html = ["graphic", { style: style }]
-	const css = []
-
-	return { css, html, rectangle }
-})()
 
 /**@type RectangleDOM*/
 let Schedule = (function() {
@@ -1550,35 +1558,60 @@ let Timing = (function() {
 	return { html, css, rectangle }
 })()
 
-function Dual(letter, rectangle, materials, time = 500, font = "cirrus", size = 3.7) {
-	rectangle = rectangle ? rectangle : new Rectangle(20, 20, 550, 10, { unit: "v", wUnit: "px" })
-	materials = materials ? materials : [colored_grid(colors.white), colored_grid(colors.base)]
+/**@type RectangleDOM*/
+const PurpleBoxOne = (() => {
+	/**@type {Material}*/
+	let material = purple_grid
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(
+		x, y, 20, 25,
+		{ unit: "v", material }
+	)
 
-	let fo = { style: mem(() => "font-family: " + font + ";font-size: " + em(size * scale()) + ";") }
-	let Alternative = (() => {
-		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[0] })
-		let inlinecss = rectangle.css()
-		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
-		return { html, css, rectangle }
-	})()
+	let style = rectangle.css()
 
-	let Practices = (() => {
-		let rectangle = new Rectangle(0, 0, 100, 100, { unit: "%", strategy: "absolute", material: materials[1] })
-		let inlinecss = rectangle.css()
-		let html = () => hdom([".alt-box", { style: inlinecss }, ["h2", fo, letter]])
-		return { html, css, rectangle }
-	})()
+	const html = ["graphic", { style: style }]
+	const css = []
 
-	let dom = maskcontainer(Alternative, Practices, rectangle, time)
-	return dom
-}
+	return { css, html, rectangle }
+})()
 
+/**@type RectangleDOM*/
+const PurpleBoxTwo = (() => {
+	/**@type {Material}*/
+	let material = purple_grid
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(
+		x, y, 25, 18,
+		{ unit: "v", material }
+	)
 
-let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
-	x: dims.x - random(0, 8),
-	y: dims.y + dims.h - random(0, 2)
-})))
+	let style = rectangle.css()
 
+	const html = ["graphic", { style: style }]
+	const css = []
+
+	return { css, html, rectangle }
+})()
+
+/**@type RectangleDOM*/
+const PurpleBoxThree = (() => {
+	/**@type {Material}*/
+	let material = purple_grid
+	let { x, y } = offscreen()
+	let rectangle = new Rectangle(
+		x, y,
+		100 - 40 - 1, 60,
+		{ unit: "v", material, strategy: "absolute" }
+	)
+
+	let style = rectangle.css()
+
+	const html = [".resources", { style: style }]
+	const css = [".resources",]
+
+	return { css, html, rectangle }
+})()
 
 const Stage = (() => {
 	const html = () => hdom([".canvas", { ref: init_p5, onclick: shuffle }])
@@ -1587,63 +1620,10 @@ const Stage = (() => {
 })()
 
 
-// -----------------------
-// Event Listeners
-// -----------------------
-document.body.onmousemove = (e) => {
-	mouse_x(e.clientX)
-	mouse_y(e.clientY)
-}
-// -----------------------
-//
-//
-
-/**@returns {Keyframe[]}*/
-let jump = (initial, then) => {
-	let top = initial - 5
-	return [
-		{ start: initial, end: top, duration: 350, easing: "OutCubic" },
-		{ start: top, end: top - .5, duration: 150, easing: "OutCubic" },
-		{ start: top - .5, end: initial - .5, duration: 150, easing: "InCubic" },
-		{ start: initial - .5, end: initial, duration: 350, easing: "InCubic", onend: then },
-	]
-}
-
-let pause = (initial, then) => {
-	return [
-		{ start: initial, end: initial + 1, duration: 800, easing: "OutCubic", onend: then },
-	]
-}
-
-let offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
-
-/** @param {(bounds: Bounding) => ({x: number, y: number})} anchor 
- * @param {Rectangle} rectangle
-**/
-function follow_fn(rectangle, anchor) {
-	return function(dims) {
-		setTimeout(() => {
-			let pos = anchor(dims)
-			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
-
-			let jumpy = () => {
-				let tl = rectangle.navigator.timeline
-				tl.clear()
-				tl.add(animate.prop(jump(rectangle.y(), actual), rectangle.y))
-			}
-
-			actual()
-			//toss() ? jumpy() : actual()
-		}, 300)
-	}
-}
-
-/*
-* @param {(bounds: Bounding) => ({x: number, y: number})} anchor
-**/
-function follow_simple(rectangle) {
-	return function(dims) { rectangle.navigator.navigate_to(dims.x, dims.y, 8, 250) }
-}
+const TimingChild = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
+	x: dims.x - random(0, 8),
+	y: dims.y + dims.h - random(0, 2)
+})))
 
 /**@type {RectangleDOM}*/
 const First = (() => {
@@ -1673,47 +1653,12 @@ const Second = (() => {
 	return { html, css, rectangle }
 })()
 
-/**
- * @param {Rectangle} rect
- * @returns {RectangleDOM}
- *
- * // x-------------------x
- * // Dom from Rectangle
- * // x-------------------x
- * */
-const domfromrectangle = (rect, atts = {}) => {
-	let css = ""
-	let ref = rect.css()
-	let off = sig(offset(365))
-
-	let interval = setInterval(() => {
-		if (reducedmotion) clearInterval(interval)
-		if (reducedmotion) return
-
-		off(offset(185))
-	}, 2000 + Math.random() * 2000)
-
-	let inlinecss = () => ref() + `;transform: rotate(${off()}deg);transition: transform 200ms`
-	let html = () => hdom(["div", { style: inlinecss, ...atts }])
-	return { html, css, rectangle: rect }
-}
-
-/**@returns {Material}*/
-let imagematerial = (src) => ({
-	css: () => css({
-		background: "#fff0",
-		"background-image": url(src),
-		"background-size": "contain",
-		"background-repeat": "no-repeat",
-		"cursor": "col-resize",
-	})
-})
+// x-------------------x
+// #Component::Utilities;
+// x-------------------x
 
 // x-------------------x
 // Mask container
-// x-------------------x
-// TODO: Mask options
-// TODO: more than one?
 // x-------------------x
 /**
  * @param {RectangleDOM} first 
@@ -1722,6 +1667,9 @@ let imagematerial = (src) => ({
  * @returns {RectangleDOM}
  * */
 const maskcontainer = (first, second, rectangle, t = 500, dragEnable = false) => {
+	// TODO: Mask options
+	// TODO: more than one?
+	// x-------------------x
 	const runreset = (el) => {
 		el.rectangle.x(0)
 		el.rectangle.y(0)
@@ -1788,33 +1736,12 @@ const maskcontainer = (first, second, rectangle, t = 500, dragEnable = false) =>
 	return { html, css: [".masked", { style: CSS.css({ position: "relative", "pointer-events": "none" }) }, first.css, second.css], rectangle }
 }
 
-/**@returns {Material}*/
-let emptycolor = (color = colors.white) => ({
-	css: () => CSS.css({
-		"background-color": color,
-	})
-})
-
-/**@returns {Material}*/
-let rotatematerial = (i) => {
-	let siggy = mem(() => ((mouse_x() / window.innerWidth * 2) - 1) * (i * 2))
-	let f = {
-		css: () => mobile() ? "" : `transform: translateX(${i * 5}px) rotate(${siggy()}deg);`
-	}
-
-	return f
-}
-
-let Alternative = Dual("Alternative", new Rectangle(0, 0, 25, 10, { strategy: "absolute", material: rotatematerial(-2) }), undefined, 750)
-let Practices = Dual("Practices", new Rectangle(0, 10, 25, 10, { strategy: "absolute", material: rotatematerial(-1) }), undefined, 500)
-let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "absolute", material: rotatematerial(3) }), [emptycolor(colors.white), white_grid], 650)
-
 /**
  * @param {RectangleDOM[]} doms
  * @param {Rectangle} rectangle
  * @returns {RectangleDOM}
  * */
-let title_container = (rectangle, tag = ".container", ...doms) => {
+const title_container = (rectangle, tag = ".container", ...doms) => {
 	let style = rectangle.css()
 	let inline = () => style() + ";cursor: grab;"
 
@@ -1833,11 +1760,7 @@ let title_container = (rectangle, tag = ".container", ...doms) => {
 	return { html, css, rectangle }
 }
 
-let Title = title_container(new Rectangle(0, 0, 25, 30, { strategy: "absolute" }), "header", Alternative, Practices, Symposium)
-
-// x-------------------x
-// Shape creator
-// x-------------------x
+const Block = (height) => domfromrectangle(new Rectangle(0, 0, 100, height))
 const shape = (src, fn) => {
 	let { x, y } = offscreen()
 	let rectangle = new Rectangle(x, y, Math.random() * 8 + 5, Math.random() * 8 + 5, {
@@ -1851,103 +1774,92 @@ const shape = (src, fn) => {
 	return Child(domdom, fn)
 }
 
-// x-------------------x
-// Follow fns
-// x-------------------x
-let tl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + offset(2) }))
-let tr = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + offset(2) }))
-let br = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + dims.w + offset(3), y: dims.y + dims.h + offset(2) }))
-let bl = (rectangle) => follow_fn(rectangle, (dims) => ({ x: dims.x + offset(3), y: dims.y + dims.h + offset(2) }))
+let Alternative = Dual("Alternative", new Rectangle(0, 0, 25, 10, { strategy: "absolute", material: rotatematerial(-2) }), undefined, 750)
+let Practices = Dual("Practices", new Rectangle(0, 10, 25, 10, { strategy: "absolute", material: rotatematerial(-1) }), undefined, 500)
+let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "absolute", material: rotatematerial(3) }), [emptycolor(colors.white), white_grid], 650)
+let Title = title_container(
+	new Rectangle(0, 0, 25, 30, { strategy: "absolute" }),
+	"header",
+	Alternative, Practices, Symposium
+);
 
-let randomizer = (rectangle) => {
-	let opts = [tl, tr, br, bl]
-	let active = opts.map(e => e(rectangle))
+const ScheduleTitle = (() => {
+	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10), 500, true)
+	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
+	return schedule_title
+})();
 
-	return (dims) => active[Math.floor(Math.random() * active.length)](dims)
-}
 
-function layer_one_shapes() {
+// x------------------------x
+// Shapes Layer One
+// x------------------------x
+(function() {
 	let shapes = Array(5).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 1) + ".png", randomizer))
 	shapes.forEach((e) => {
-		Information.rectangle.add_child(e)
+		PurpleBoxThree.rectangle.add_child(e)
 		space.add(e)
 	})
-}
-layer_one_shapes()
+})()
 
+// x------------------------x
+// Add graphics
+// x------------------------x
+space.add(PurpleBoxThree)
+space.add(PurpleBoxOne)
+space.add(PurpleBoxTwo)
+space.add(Stage);
 
-space.add(Information)
-space.add(Dumplicate)
-space.add(DumplicateSmall)
-space.add(Stage)
+/**@type {RectangleDOM[]}*/
+let graphics = [PurpleBoxThree, PurpleBoxOne, PurpleBoxTwo];
 
-function layer_two_shapes() {
+// x------------------------x
+// Shapes Layer Two
+// x------------------------x
+(function() {
 	let shapes = Array(3).fill(0).map((e, i) => shape("./shapes/shape_" + (i + 2) + ".png", randomizer))
 	shapes.forEach((e) => {
 		About.rectangle.add_child(e)
 		space.add(e)
 	})
-}
-layer_two_shapes()
-
-//let about_child = Child(About, follow_fn(About.rectangle, (dim) => ({ x: dim.x + dim.w + random(-1, 2), y: random(0, 35) })))
-
-
-
-//Schedule.rectangle.add_child(TitleChild)
-//let schedule_child = Child(Schedule, follow_fn(Schedule.rectangle, (dim) => ({ x: dim.x + dim.w - random(-1, 3), y: dim.y + offset(3) })))
-
-const schedule_title = (() => {
-	let dom = maskcontainer(First, Second, new Rectangle(-50, -50, Schedule.rectangle.w(), 10), 500, true)
-	let schedule_title = Child(dom, follow_fn(dom.rectangle, (dim) => ({ x: dim.x, y: dim.y })))
-	return schedule_title
 })()
 
-Title.rectangle.add_child(child_timing)
-Schedule.rectangle.add_child(schedule_title)
 
+Title.rectangle.add_child(TimingChild)
+Schedule.rectangle.add_child(ScheduleTitle)
+
+// -----------------
+// General Layout
+// -----------------
 space.add(Title)
 space.add(Schedule)
-space.add(schedule_title)
+space.add(ScheduleTitle)
 space.add(About)
-space.add(child_timing)
-//space.add(schedule_child)
+space.add(TimingChild)
 
-//space.add(about_child)
-
-mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 5)))
+// -------------------
+// Mobile/Tablet Layout
+// -------------------
+mobile_space.add(Block(5))
 mobile_space.add(Title)
-mobile_space.add(child_timing)
+mobile_space.add(TimingChild)
 
-mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 35)))
+mobile_space.add(Block(35))
 mobile_space.add(About)
 
-mobile_space.add(domfromrectangle(new Rectangle(0, 0, 100, 15)))
-mobile_space.add(schedule_title)
+mobile_space.add(Block(15))
+mobile_space.add(ScheduleTitle)
 mobile_space.add(Schedule)
-//mobile_space.add(schedule_child)
 
-document.body.innerHTML = ""
 render(Main, document.body)
-
-//----------------------------
-// TEMP
-//----------------------------
-/**@type {RectangleDOM[]}*/
-let graphics = [Information, Dumplicate, DumplicateSmall]
 shuffle()
 
-
+// -----------------------
+// Event Listeners
+// -----------------------
+document.body.onmousemove = (e) => { mouse_x(e.clientX); mouse_y(e.clientY) }
 eff_on(mobile, () => {
-	if (mobile()) {
-		space.hide()
-		mobile_space.show()
-	}
-
-	else {
-		space.show()
-		mobile_space.hide()
-	}
+	if (mobile()) { space.hide(); mobile_space.show() }
+	else { space.show(); mobile_space.hide() }
 })
 
 // x------------------------x
@@ -2010,4 +1922,42 @@ eff_on(mobile, () => {
  *	rectangle: Rectangle,
  *	follow: (bounding: Bounding) => void
  * }} RectangleDOMChild
+ *
+ * @typedef {{
+ *  start: number,
+ *  end: number,
+ *  duration: number,
+ *  easing?: string,
+ *	onend?: () => void 
+ *	onstart?: () => void 
+ *	onupdate?: () => void 
+ *	ondestroy?: (reason: string) => void 
+ * }} Keyframe
+ *
+ * @typedef {{
+ *   active: boolean,
+ *   looping: boolean,
+ *   elapsedTime: number,
+ *   activeMotion: number,
+ *   currentValue: number,
+ *   keyframes: Array<Keyframe>,
+ *   destroy: () => void,
+ *   instant_destroy: () => void,
+ *   animate: () => void,
+ *   update: ClockCallback,
+ *   add: (key: Keyframe) => PropInstance,
+ *   loop: () => void,
+ *   val: () => number,
+ *   setEasing: (easing: string) => PropInstance,
+ * }} PropInstance
+ *
+ * @typedef {{
+ *   add: (prop: PropInstance) => TimelineInstance,
+ *   loop: () => TimelineInstance,
+ *   animate: () => TimelineInstance,
+ *   setEasing: (easing: string) => TimelineInstance,
+ *   pause: () => TimelineInstance,
+ *   clear: () => void,
+ * }} TimelineInstance
+ *
  */

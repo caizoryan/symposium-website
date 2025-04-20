@@ -6,6 +6,8 @@ export const drag = (elem, options = {}) => {
 	const set_left = options.set_left ? options.set_left : (left) => { elem.style.left = left + "px"; };
 	const set_top = options.set_top ? options.set_top : (top) => { elem.style.top = top + "px"; };
 	const enabled = options.enabled ? options.enabled : () => true
+	const onend = options.onend ? options.onend : null
+	console.log("onened", onend)
 
 	// For panning (translate)
 	let lastPosX, lastPosY;					// Needed because of decimals 
@@ -134,11 +136,12 @@ export const drag = (elem, options = {}) => {
 	}
 
 	function handle_pointerup(e) {
+		if (onend) onend()
 		let target = check_target(e.target, e.currentTarget);
 		if (!target) return;
 		e.preventDefault();
 		e.stopPropagation();
-		target.style.cursor = ''
+
 		target.releasePointerCapture(e.pointerId);
 	}
 

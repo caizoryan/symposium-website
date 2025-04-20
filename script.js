@@ -320,7 +320,10 @@ let style = mut([
 	["*", {
 		padding: 0,
 		margin: 0,
-	}],
+		"scrollbar-color": colors.highlight + " " + colors.white + "00 !important",
+		"scrollbar-width": "thin",
+	}
+	],
 
 	// -----------------
 	// Heading
@@ -1372,7 +1375,7 @@ let Schedule = (function() {
 			"font-weight": 600,
 			"border-top": [[px(1), "solid", colors.highlight]],
 			color: colors.highlight,
-			cursor: "pointer",
+			cursor: "col-resize",
 			transition: "all 200ms"
 		},
 			[":hover", {
@@ -1397,14 +1400,16 @@ let Schedule = (function() {
 
 	//let { x, y } = offscreen()
 	let { x, y } = random_pos(30, 60)
-	let rectangle = new Rectangle(x, y, 30, 85, { unit: "v", strategy: "absolute" })
+	let rectangle = new Rectangle(x, y, 30, 80, { unit: "v", strategy: "absolute" })
 	let inlincecss = rectangle.css()
 
 	const html = () => {
 		let ref
 		mounted(() => drag(ref, {
-			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
-			, enabled: () => !mobile()
+			set_left: (px) => rectangle.x(px_to_vw(px)),
+			set_top: (px) => rectangle.y(px_to_vh(px)),
+			onend: () => rectangle.navigator.navigate_to(rectangle.x() + offset(2), rectangle.y() + offset(2)),
+			enabled: () => !mobile()
 		}))
 
 		return hdom(
@@ -1578,7 +1583,7 @@ let child_timing = Child(Timing, follow_fn(Timing.rectangle, (dims) => ({
 
 const Stage = (() => {
 	const html = () => hdom([".canvas", { ref: init_p5, onclick: shuffle }])
-	const css = [".canvas", { cursor: "pointer", position: "fixed", "mix-blend-mode": "difference" }, fullscreen]
+	const css = [".canvas", { cursor: "col-resize", position: "fixed", "mix-blend-mode": "difference" }, fullscreen]
 	return { html, css }
 })()
 
@@ -1701,7 +1706,7 @@ let imagematerial = (src) => ({
 		"background-image": url(src),
 		"background-size": "contain",
 		"background-repeat": "no-repeat",
-		"cursor": "pointer",
+		"cursor": "col-resize",
 	})
 })
 
@@ -1810,15 +1815,17 @@ let Symposium = Dual("Symposium", new Rectangle(0, 20, 25, 10, { strategy: "abso
  * @param {Rectangle} rectangle
  * @returns {RectangleDOM}
  * */
-let container = (rectangle, tag = ".container", ...doms) => {
+let title_container = (rectangle, tag = ".container", ...doms) => {
 	let style = rectangle.css()
 	let inline = () => style() + ";cursor: grab;"
 
 	let html = () => {
 		let ref
 		mounted(() => drag(ref, {
-			set_left: (px) => rectangle.x(px_to_vw(px)), set_top: (px) => rectangle.y(px_to_vh(px))
-			, enabled: () => !mobile()
+			set_left: (px) => rectangle.x(px_to_vw(px)),
+			set_top: (px) => rectangle.y(px_to_vh(px)),
+			onend: () => rectangle.navigator.navigate_to(rectangle.x() + offset(2), rectangle.y() + offset(2)),
+			enabled: () => !mobile()
 		}))
 		return hdom([tag, { ref: e => ref = e, style: inline }, ...doms.map(e => e.html)])
 	}
@@ -1827,7 +1834,7 @@ let container = (rectangle, tag = ".container", ...doms) => {
 	return { html, css, rectangle }
 }
 
-let Title = container(new Rectangle(0, 0, 25, 30, { strategy: "absolute" }), "header", Alternative, Practices, Symposium)
+let Title = title_container(new Rectangle(0, 0, 25, 30, { strategy: "absolute" }), "header", Alternative, Practices, Symposium)
 
 // x-------------------x
 // Shape creator

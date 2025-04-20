@@ -52,6 +52,7 @@ const clamp = (a, min = 0, max = 1) => Math.min(max, Math.max(min, a));
 const range = (x1, y1, x2, y2, a) => lerp(x2, y2, invlerp(x1, y1, a));
 const not = (value) => !value
 const toss = () => Math.random() > .5
+const offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
 
 /**@type {(val: number, min: number, max: number) => boolean}*/
 const between = (val, min, max) => (val > min && val < max)
@@ -785,16 +786,7 @@ function follow_fn(rectangle, anchor) {
 	return function(dims) {
 		setTimeout(() => {
 			let pos = anchor(dims)
-			let actual = () => rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
-
-			let jumpy = () => {
-				let tl = rectangle.navigator.timeline
-				tl.clear()
-				tl.add(animate.prop(jump(rectangle.y(), actual), rectangle.y))
-			}
-
-			actual()
-			//toss() ? jumpy() : actual()
+			rectangle.navigator.navigate_to(pos.x, pos.y, 8, 250)
 		}, 300)
 	}
 }
@@ -1020,21 +1012,6 @@ function Animator(clock) {
 }
 
 
-// x-------------------x
-// #Animation::Utilities;
-// x-------------------x
-/**@returns {Keyframe[]}*/
-const jump = (initial, then) => {
-	let top = initial - 5
-	return [
-		{ start: initial, end: top, duration: 350, easing: "OutCubic" },
-		{ start: top, end: top - .5, duration: 150, easing: "OutCubic" },
-		{ start: top - .5, end: initial - .5, duration: 150, easing: "InCubic" },
-		{ start: initial - .5, end: initial, duration: 350, easing: "InCubic", onend: then },
-	]
-}
-
-const offset = (mul) => Math.random() * (toss() ? mul : mul * -1)
 const animate = Animator(clock)
 
 // -----------------------

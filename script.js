@@ -4,9 +4,10 @@ import { Q5 } from "./q5/q5.js"
 import { drag } from "./drag.js"
 import CSS from "./css/css.js"
 import * as Chowk from "./chowk/monke.js"
-const delay = fn => setTimeout(fn, 100)
 
-let reducedmotion = matchMedia("(prefers-reduced-motion)").matches
+const delay = fn => setTimeout(fn, 100)
+const reducedmotion = matchMedia("(prefers-reduced-motion)").matches
+
 console.log("reduced motion enabled:", reducedmotion)
 
 delay(_ => console.log(`
@@ -21,30 +22,13 @@ That's where all the magic is!
 More information about the structure of the code can be found at https://github.com/caizoryan/symposium-website
 `))
 
-let px_to_vw = (px) => (px / window.innerWidth) * 100
-let px_to_vh = (px) => (px / window.innerHeight) * 100
+const px_to_vw = (px) => (px / window.innerWidth) * 100
+const px_to_vh = (px) => (px / window.innerHeight) * 100
 
-let windowwidth = sig(window.innerWidth)
-window.onresize = () => windowwidth(window.innerWidth)
-let scale = mem(() => windowwidth() > 1150 ? 1 : .75)
-let mobile = mem(() => windowwidth() < 1000 ? true : false)
-let tablet = mem(() => windowwidth() > 700 && mobile())
-
-const Easings = {
-	linear: (t) => t,
-	InQuad: (t) => t * t,
-	OutQuad: (t) => t * (2 - t),
-	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
-	InCubic: (t) => t * t * t,
-	OutCubic: (t) => --t * t * t + 1,
-	InOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
-	InQuart: (t) => t * t * t * t,
-	OutQuart: (t) => 1 - --t * t * t * t,
-	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
-	InQuint: (t) => t * t * t * t * t,
-	OutQuint: (t) => 1 + --t * t * t * t * t,
-	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
-};
+const windowwidth = sig(window.innerWidth)
+const scale = mem(() => windowwidth() > 1150 ? 1 : .75)
+const mobile = mem(() => windowwidth() < 1000 ? true : false)
+const tablet = mem(() => windowwidth() > 700 && mobile())
 
 const lerp = (start, stop, amt) => amt * (stop - start) + start
 const invlerp = (x, y, a) => clamp((a - x) / (y - x));
@@ -128,6 +112,7 @@ let sections = [
 	},
 	{
 		title: "Nam Hoang {Sheep school}", time: "&",
+		bio: "SHEEEP𝓼𝓬𝓱𝓸𝓸𝓵 is an experimental creative and learning space located in T’karonto. SHEEEP develops collaborative art, design and educational projects with communities and grassroots organizations through. Nam Hoang seeks to create more meaningful community participation and advocacy in issues of architecture and urban futures. He is the co-founder of Makeshift Collective, as well as a systemic designer and foresight practitioner.",
 		links: [
 			["Website", "https://sheeep.school/"]
 		]
@@ -137,6 +122,22 @@ let sections = [
 	{ title: "Wrap up", },
 	{ title: "Final words and wrap up:", time: "9:00pm" },
 ]
+
+const Easings = {
+	linear: (t) => t,
+	InQuad: (t) => t * t,
+	OutQuad: (t) => t * (2 - t),
+	InOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+	InCubic: (t) => t * t * t,
+	OutCubic: (t) => --t * t * t + 1,
+	InOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+	InQuart: (t) => t * t * t * t,
+	OutQuart: (t) => 1 - --t * t * t * t,
+	InOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
+	InQuint: (t) => t * t * t * t * t,
+	OutQuint: (t) => 1 + --t * t * t * t * t,
+	InOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
+};
 
 // --------------------------
 // *Header: Introduction
@@ -167,10 +168,7 @@ const colors = mut({
 	black: "#4D4D4D"
 })
 
-const type = mut({
-	heading: "cirrus"
-})
-
+const type = mut({ heading: "cirrus" })
 
 // --------------------------
 // CSS UTILITIES
@@ -210,8 +208,8 @@ const offscreen = () => {
 /**@typedef {("title" | "schedule" | "about")} ComponentOptions
  * @type {ComponentOptions[]}
  * */
-let options = [`title`, 'schedule', 'about']
-let shuffle = () => {
+const options = [`title`, 'schedule', 'about']
+const shuffle = () => {
 	graphics.forEach((el) => {
 		let pos = random_pos(
 			el.rectangle.w(),
@@ -1834,6 +1832,7 @@ shuffle()
 // Event Listeners
 // -----------------------
 document.body.onmousemove = (e) => { mouse_x(e.clientX); mouse_y(e.clientY) }
+window.onresize = () => windowwidth(window.innerWidth)
 eff_on(mobile, () => {
 	if (mobile()) { space.hide(); mobile_space.show() }
 	else { space.show(); mobile_space.hide() }
